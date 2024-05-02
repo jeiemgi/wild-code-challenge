@@ -1,30 +1,43 @@
 import { DataType } from "@/js/data.ts";
-import { Grid } from "@/components/Grid.tsx";
 
 function GalleryTitles({ data }: { data: DataType }) {
   return (
-    <Grid
-      className={"fixed left-0 top-0 size-full items-center justify-center"}
+    <div
+      className={
+        "pointer-events-none fixed left-0 top-0 size-full items-center justify-center"
+      }
     >
-      <div
-        className={"relative col-span-6 col-start-4 flex h-full items-center"}
-      >
+      <div className={"relative mx-auto flex h-full w-[54%] items-center"}>
         {data.map((item, index) => {
           return (
-            <div className={"gallery-title absolute w-full"}>
+            <div
+              key={`GalleryTitle-${index}`}
+              className={"gallery-title absolute w-full"}
+            >
               <h1
-                key={`GalleryTitle-${index}`}
                 className={
-                  "heading--1 text-outline text-center text-transparent"
+                  "heading--1 text-outline pointer-events-auto text-center"
                 }
               >
                 {item.title}
               </h1>
+              <div
+                className={
+                  "clip-text pointer-events-none absolute left-0 top-0 size-full"
+                }
+              >
+                <h1
+                  key={`GalleryTitle-${index}`}
+                  className={"heading--1 text-center"}
+                >
+                  {item.title}
+                </h1>
+              </div>
             </div>
           );
         })}
       </div>
-    </Grid>
+    </div>
   );
 }
 

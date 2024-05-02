@@ -15,8 +15,8 @@
 @font-face {
   font-family: "Tungsten";
   src:
-    url("./assets/fonts/Tungsten/Tungsten-Bold.woff2") format("woff2"),
-    url("./assets/fonts/Tungsten/Tungsten-Bold.woff") format("woff");
+    url("./assets/fonts/Tungsten/Tungsten-Semibold.woff2") format("woff2"),
+    url("./assets/fonts/Tungsten/Tungsten-Semibold.woff") format("woff");
   font-weight: bold;
   font-style: normal;
   font-display: swap;
@@ -33,17 +33,29 @@ h1 {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
+
 .heading--1 {
-  font-size: 210px;
-  text-align: center;
   font-family: "Tungsten", serif;
-  text-transform: uppercase;
-  line-height: 176px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 13.75rem;
+  line-height: 80%;
+  text-align: center;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.clip-text {
+  width: 100%;
+  color: white;
+  background-clip: text;
+  -webkit-background-clip: text;
+  clip-path:inset(0% 19.9% 0% 19.2%);
 }
 
 .text-outline {
-  -webkit-text-stroke-width: 3px;
+  color: transparent;
+  -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: white;
 }
 
