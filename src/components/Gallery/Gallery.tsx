@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { DataType } from "@/App.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { gsap, Observer } from "@/js/gsap";
 import { clsx } from "clsx";
 
@@ -14,10 +14,10 @@ const Wrapper = styled.div`
 const Background = styled.div`
   top: 0;
   left: 0;
+  opacity: 0;
   width: 100%;
   height: 100%;
   position: absolute;
-  filter: blur(80px);
   background-size: 100%;
   background-position: center;
 `;
@@ -26,32 +26,33 @@ interface Props {
   data: DataType;
 }
 
+const MARGIN = 16;
 const slideItemClass = ".slide-item";
 
+const getPositions = (
+  idx: number,
+  activeIndex: number,
+  item: HTMLDivElement,
+  container?: HTMLDivElement | null,
+) => {
+  let posX = -MARGIN;
+  let posY = 0;
+
+  const isActive = idx === activeIndex;
+  const isPrev = idx === activeIndex - 1;
+
+  const containerH = container ? container.clientHeight : window.innerHeight;
+
+  if (isPrev) posX = -(item.clientWidth / 2) - MARGIN;
+  if (isActive) posY = (containerH - item.clientHeight) / 2;
+  else if (isPrev) posY = containerH - item.clientHeight / 2;
+  else if (idx < activeIndex - 1) posY = containerH;
+  else if (idx > activeIndex + 1) posY = -item.clientHeight / 2;
+
+  return { x: posX, y: posY };
+};
+
 function Gallery({ data }: Props) {
-  const getPositions = (
-    idx: number,
-    active: number,
-    width: number,
-    height: number,
-  ) => {
-    const isActive = idx === active;
-    const isPrev = idx === active - 1;
-
-    if (isPrev) console.log(idx);
-
-    let posX = 0;
-    if (isPrev) posX = -width / 2;
-
-    let posY = 0;
-    if (isActive) posY = (window.innerHeight - height) / 2;
-    else if (isPrev) posY = window.innerHeight - height / 2;
-    else if (idx < active - 1) posY = window.innerHeight;
-    else if (idx > active + 1) posY = -height / 2;
-
-    return { x: posX, y: posY };
-  };
-
   useEffect(() => {
     const ctx = gsap.context(() => {
       let activeIndex = 0;
@@ -60,8 +61,8 @@ function Gallery({ data }: Props) {
       const DOM = {
         next: document.querySelector("#button-next"),
         prev: document.querySelector("#button-prev"),
-        wrapper: document.querySelector(".slider-wrapper"),
         backgrounds: [...document.querySelectorAll(".background-item")],
+        wrapper: document.querySelector<HTMLDivElement>(".slider-wrapper"),
         slides: document.querySelectorAll<HTMLDivElement>(slideItemClass),
         images: document.querySelectorAll<HTMLDivElement>(".slide-img"),
       };
@@ -95,23 +96,12 @@ function Gallery({ data }: Props) {
         });
 
         const bgItems = document.querySelectorAll(".background-item");
-        tl.set(
-          bgItems[activeIndex],
-          {
-            scale: 2,
-            opacity: 0,
-            filter: "blur(500px)",
-          },
-          0,
-        );
-
         tl.to(
           bgItems[activeIndex],
           {
-            scale: 1.5,
+            scale: 2,
             opacity: 1,
             duration: 2,
-            filter: "blur(10px)",
             ease: "circ.inOut",
           },
           0,
@@ -123,11 +113,11 @@ function Gallery({ data }: Props) {
       const goToSlide = (idx: number) => {
         // TODO: LOOP
         if (animating || idx < 0 || idx === data.length) return;
-
         animating = true;
 
+        const direction = activeIndex < idx ? "prev" : "next";
         const DOM = {
-          wrapper: document.querySelector(".slider-wrapper"),
+          wrapper: document.querySelector<HTMLDivElement>(".slider-wrapper"),
           slides: document.querySelectorAll<HTMLDivElement>(slideItemClass),
           images: document.querySelectorAll<HTMLDivElement>(".slide-img"),
         };
@@ -145,31 +135,23 @@ function Gallery({ data }: Props) {
         tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0);
 
         DOM.images.forEach((img, index) => {
-          const pos = getPositions(
-            index,
-            idx,
-            img.clientWidth,
-            img.clientHeight,
-          );
+          const pos = getPositions(index, idx, img, DOM.slides[index]);
           tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0);
         });
 
-        const direction = activeIndex < idx ? "prev" : "next";
         const bgItems = document.querySelectorAll(".background-item");
-
+        const percent = 50;
         bgItems.forEach((item, index) => {
           if (index === idx) {
             tl.fromTo(
               item,
               {
                 opacity: 0,
-                filter: "blur(80px)",
-                xPercent: direction === "next" ? -10 : 10,
+                xPercent: direction === "next" ? -percent : percent,
               },
               {
                 opacity: 1,
                 xPercent: 0,
-                filter: "blur(10px)",
               },
               0,
             );
@@ -178,8 +160,7 @@ function Gallery({ data }: Props) {
               item,
               {
                 opacity: 0,
-                filter: "blur(10px)",
-                xPercent: direction === "next" ? 10 : -10,
+                xPercent: direction === "next" ? percent : -percent,
               },
               0,
             );
@@ -192,8 +173,12 @@ function Gallery({ data }: Props) {
       const setup = () => {
         DOM.images.forEach((img, index) => {
           const isActive = index === activeIndex;
-          const { width, height } = img.getBoundingClientRect();
-          const position = getPositions(index, activeIndex, width, height);
+          const position = getPositions(
+            index,
+            activeIndex,
+            img,
+            DOM.slides[index],
+          );
           gsap.set(img, {
             x: position.x,
             y: position.y,
@@ -201,14 +186,11 @@ function Gallery({ data }: Props) {
           });
         });
 
-        DOM.backgrounds.forEach((bgItem) => {
-          gsap.set(DOM.backgrounds, {
-            scale: bgItem ? 2 : 1.5,
-          });
-        });
+        gsap.set(DOM.backgrounds, { scale: 2.5 });
 
         Observer.create({
           type: "wheel,touch",
+          preventDefault: true,
           onUp: () => {
             if (!animating) goToSlide(activeIndex - 1);
           },
@@ -216,18 +198,17 @@ function Gallery({ data }: Props) {
             if (!animating) goToSlide(activeIndex + 1);
           },
         });
-
-        onResize();
       };
 
       setup();
+      onResize();
       initialAnimation();
 
       const nextSlide = () => {
         goToSlide(activeIndex + 1);
       };
 
-      const prevSlide = (direction: string) => {
+      const prevSlide = () => {
         goToSlide(activeIndex - 1);
       };
 
@@ -249,13 +230,13 @@ function Gallery({ data }: Props) {
   return (
     <Wrapper>
       <div className={"absolute size-full overflow-hidden"}>
-        {data.map((el, index) => {
+        {data.map((_, index) => {
           return (
             <Background
               key={`Background-Item-${index}`}
               className={`background-item absolute size-full bg-cover bg-center opacity-0`}
               style={{
-                backgroundImage: `url(${data[index].image})`,
+                backgroundImage: `url(${data[index].background})`,
               }}
             />
           );
@@ -265,7 +246,7 @@ function Gallery({ data }: Props) {
       <div className={"slider relative size-full overflow-hidden"}>
         <div
           className={
-            "slider-wrapper absolute left-1/3 top-0 flex h-full items-center"
+            "slider-wrapper absolute left-1/3 top-0 flex h-full items-center p-4"
           }
         >
           {data.map((item, index) => {
