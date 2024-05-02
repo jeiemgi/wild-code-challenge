@@ -26,20 +26,30 @@ body {
   overscroll-behavior: none;
 }
 
+h1 {
+  font-kerning: none;
+  -webkit-text-rendering: optimizeSpeed;
+  text-rendering: optimizeSpeed;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
 .heading--1 {
-  font-size: 220px;
+  font-size: 210px;
   text-align: center;
   font-family: "Tungsten", serif;
   text-transform: uppercase;
   line-height: 176px;
   letter-spacing: 0.04em;
-  color: transparent;
+}
+
+.text-outline {
+  -webkit-text-stroke-width: 3px;
+  -webkit-text-stroke-color: white;
 }
 
 .slide-item--active img {
   border-color: green;
 }
-
 
 .slide-item--prev img {
   border-color: yellow;

@@ -1,8 +1,13 @@
 import styled from "styled-components";
-import { DataType } from "@/App.tsx";
 import { useEffect } from "react";
-import { gsap, Observer } from "@/js/gsap";
-import { clsx } from "clsx";
+import { gsap, Observer, SplitText } from "@/js/gsap";
+import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
+import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
+import type { DataType } from "@/js/data.ts";
+import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
+
+const MARGIN = 16;
+const slideItemClass = ".slide-item";
 
 const Wrapper = styled.div`
   width: 100vw;
@@ -11,23 +16,9 @@ const Wrapper = styled.div`
   overflow: hidden;
 `;
 
-const Background = styled.div`
-  top: 0;
-  left: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  background-size: 100%;
-  background-position: center;
-`;
-
 interface Props {
   data: DataType;
 }
-
-const MARGIN = 16;
-const slideItemClass = ".slide-item";
 
 const getPositions = (
   idx: number,
@@ -57,6 +48,7 @@ function Gallery({ data }: Props) {
     const ctx = gsap.context(() => {
       let activeIndex = 0;
       let animating = false;
+      const titlesSplits: SplitText[] = [];
 
       const DOM = {
         next: document.querySelector("#button-next"),
@@ -65,6 +57,7 @@ function Gallery({ data }: Props) {
         wrapper: document.querySelector<HTMLDivElement>(".slider-wrapper"),
         slides: document.querySelectorAll<HTMLDivElement>(slideItemClass),
         images: document.querySelectorAll<HTMLDivElement>(".slide-img"),
+        titles: document.querySelectorAll<HTMLDivElement>(".gallery-title"),
       };
 
       if (!DOM.wrapper || DOM.slides.length < 1) return;
@@ -107,6 +100,9 @@ function Gallery({ data }: Props) {
           0,
         );
 
+        const wrappers = DOM.titles[activeIndex].querySelectorAll(".char-wrap");
+        tl.to(wrappers, { xPercent: 0, duration: 1 }, 2);
+
         tl.play();
       };
 
@@ -116,11 +112,6 @@ function Gallery({ data }: Props) {
         animating = true;
 
         const direction = activeIndex < idx ? "prev" : "next";
-        const DOM = {
-          wrapper: document.querySelector<HTMLDivElement>(".slider-wrapper"),
-          slides: document.querySelectorAll<HTMLDivElement>(slideItemClass),
-          images: document.querySelectorAll<HTMLDivElement>(".slide-img"),
-        };
 
         const tl = gsap.timeline({
           paused: true,
@@ -167,10 +158,74 @@ function Gallery({ data }: Props) {
           }
         });
 
+        const leavingWrappers =
+          DOM.titles[activeIndex].querySelectorAll(".char-wrap");
+        const activeWrappers = DOM.titles[idx].querySelectorAll(".char-wrap");
+
+        const yPercent = 5;
+        const xPercent = 100;
+
+        tl.to(
+          leavingWrappers,
+          {
+            duration: 0.5,
+            opacity: 0,
+            yPercent: direction === "next" ? -yPercent : yPercent,
+            xPercent: direction === "next" ? xPercent : -xPercent,
+          },
+          0,
+        );
+
+        tl.fromTo(
+          activeWrappers,
+          {
+            opacity: 0,
+            yPercent: direction === "next" ? yPercent : -yPercent,
+            xPercent: direction === "next" ? -xPercent : xPercent,
+          },
+          {
+            duration: 0.5,
+            opacity: 1,
+            yPercent: 0,
+            xPercent: 0,
+          },
+          0.2,
+        );
+
         tl.play();
       };
 
+      const setupTitles = () => {
+        DOM.titles.forEach((title) => {
+          const split = new SplitText(title, {
+            type: "chars,words",
+            linesClass: "overflow-hidden",
+            charsClass: "overflow-hidden",
+          });
+
+          const charsWrappers: HTMLDivElement[] = [];
+
+          split.chars.forEach((char) => {
+            const div = document.createElement("div");
+            div.classList.add("char-wrap");
+            div.style.position = "relative";
+            div.style.display = "inline-block";
+            div.style.overflow = "hidden";
+            if (char.textContent) {
+              div.append(char.textContent);
+              char.innerHTML = "";
+              char.append(div);
+              charsWrappers.push(div);
+            }
+          });
+
+          gsap.set(charsWrappers, { xPercent: 100 });
+          titlesSplits.push(split);
+        });
+      };
+
       const setup = () => {
+        gsap.set(DOM.backgrounds, { scale: 2.5 });
         DOM.images.forEach((img, index) => {
           const isActive = index === activeIndex;
           const position = getPositions(
@@ -186,8 +241,6 @@ function Gallery({ data }: Props) {
           });
         });
 
-        gsap.set(DOM.backgrounds, { scale: 2.5 });
-
         Observer.create({
           type: "wheel,touch",
           preventDefault: true,
@@ -198,6 +251,8 @@ function Gallery({ data }: Props) {
             if (!animating) goToSlide(activeIndex + 1);
           },
         });
+
+        setupTitles();
       };
 
       setup();
@@ -229,46 +284,10 @@ function Gallery({ data }: Props) {
 
   return (
     <Wrapper>
-      <div className={"absolute size-full overflow-hidden"}>
-        {data.map((_, index) => {
-          return (
-            <Background
-              key={`Background-Item-${index}`}
-              className={`background-item absolute size-full bg-cover bg-center opacity-0`}
-              style={{
-                backgroundImage: `url(${data[index].background})`,
-              }}
-            />
-          );
-        })}
-      </div>
+      <GalleryBackground data={data} />
+      <GallerySlides data={data} />
+      <GalleryTitles data={data} />
 
-      <div className={"slider relative size-full overflow-hidden"}>
-        <div
-          className={
-            "slider-wrapper absolute left-1/3 top-0 flex h-full items-center p-4"
-          }
-        >
-          {data.map((item, index) => {
-            return (
-              <div
-                key={`Gallery-Item-${index}`}
-                className={
-                  "slide-item flex size-full items-start will-change-transform"
-                }
-              >
-                <img
-                  src={item.image}
-                  alt={`Image template ${index}`}
-                  className={clsx(
-                    "slide-img  h-3/4 w-full origin-top-right rounded-[40px] object-cover will-change-transform",
-                  )}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
       <div
         className={
           "fixed left-10 top-10 z-10 overflow-hidden rounded-md bg-white/50 shadow-2xl backdrop-blur-3xl"
