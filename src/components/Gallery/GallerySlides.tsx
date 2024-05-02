@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { DataType } from "@/App.tsx";
+import { DataType } from "@/js/data.ts";
 
 function GallerySlides({ data }: { data: DataType }) {
   return (
