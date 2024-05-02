@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Tungsten";
+  src:
+    url("./assets/fonts/Tungsten/Tungsten-Semibold.woff2") format("woff2"),
+    url("./assets/fonts/Tungsten/Tungsten-Semibold.woff") format("woff");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tungsten";
+  src:
+    url("./assets/fonts/Tungsten/Tungsten-Bold.woff2") format("woff2"),
+    url("./assets/fonts/Tungsten/Tungsten-Bold.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.heading--1 {
+  font-size: 220px;
+  text-align: center;
+  font-family: "Tungsten", serif;
+  text-transform: uppercase;
+  line-height: 176px;
+  letter-spacing: 0.04em;
+  color: transparent;
+}
+
+.slide-item--active img {
+  border-color: green;
+}
+
+
+.slide-item--prev img {
+  border-color: yellow;
+}
+
+.slide-item--next img {
+  border-color: blue;
+}
