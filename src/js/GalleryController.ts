@@ -311,7 +311,7 @@ export class GalleryController {
     const animateWrapper = () => {
       if (DOM.wrapper && DOM.slides) {
         const activeSlide = DOM.slides[idx];
-        tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0);
+        tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0.2);
       }
     };
 
@@ -319,7 +319,7 @@ export class GalleryController {
       if (DOM.images) {
         DOM.images.forEach((img, index) => {
           const pos = getPositions(index, idx, img, DOM.slides[index]);
-          tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0);
+          tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0.2);
         });
       }
     };
@@ -396,7 +396,7 @@ export class GalleryController {
           yPercent: 0,
           xPercent: 0,
         },
-        0.2,
+        0.3,
       );
     };
 
