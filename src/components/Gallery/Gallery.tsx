@@ -21,10 +21,16 @@ interface Props {
 
 function Gallery({ data }: Props) {
   useEffect(() => {
+    let controller: GalleryController;
+
     const ctx = gsap.context(() => {
-      GalleryController("#gallery-home", data);
+      controller = new GalleryController("#gallery-home", data);
     });
-    return () => ctx.revert();
+
+    return () => {
+      ctx.revert();
+      controller?.cleanup();
+    };
   }, [data]);
 
   return (

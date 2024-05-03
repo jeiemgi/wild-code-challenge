@@ -3,12 +3,7 @@ import data from "@/js/data.ts";
 import "@/App.css";
 
 function App() {
-  return (
-    <>
-      {/*<GalleryUI data={data} />*/}
-      <Gallery data={data} />
-    </>
-  );
+  return <Gallery data={data} />;
 }
 
 export default App;
