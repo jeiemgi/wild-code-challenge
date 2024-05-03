@@ -1,5 +1,6 @@
 import { gsap, Observer, SplitText } from "@/js/gsap.ts";
 import { DataType } from "@/js/data.ts";
+import { MouseEvent } from "react";
 
 const MARGIN = 16;
 const slideItemClass = ".slide-item";
@@ -10,7 +11,7 @@ const getPositions = (
   item: HTMLDivElement,
   container?: Element | null,
 ) => {
-  let posX = -MARGIN;
+  let posX = 0;
   let posY = 0;
 
   const isActive = idx === activeIndex;
@@ -27,12 +28,99 @@ const getPositions = (
   return { x: posX, y: posY };
 };
 
+class Cursor {
+  DOM: {
+    el: HTMLDivElement | null;
+    SVG: SVGElement | null;
+  } = {
+    el: null,
+    SVG: null,
+  };
+
+  isInView = false;
+  quickTos;
+  timeout: number = 0;
+  timeoutCallback: () => void;
+
+  constructor(callback: () => void) {
+    const container = document.querySelector<HTMLDivElement>("#ui-cursor");
+
+    this.DOM = {
+      el: container,
+      SVG: container?.querySelector("svg") || null,
+    };
+
+    this.quickTos = {
+      opacity: gsap.quickTo(this.DOM.el, "opacity", {
+        duration: 0.3,
+        ease: "power4.out",
+      }),
+      x: gsap.quickTo(this.DOM.el, "x", {
+        duration: 0.2,
+        ease: "power3.out",
+      }),
+      y: gsap.quickTo(this.DOM.el, "y", {
+        duration: 0.2,
+        ease: "power3.out",
+      }),
+    };
+    gsap.set(this.DOM.SVG, { rotate: -90, y: -2 });
+    this.timeoutCallback = callback;
+    this.setup();
+  }
+
+  mouseMove = (e: MouseEvent) => {
+    this.quickTos.x(e.clientX, e.clientX);
+    this.quickTos.y(e.clientY, e.clientY);
+  };
+
+  mouseEnter = () => {
+    this.quickTos.opacity(1);
+  };
+
+  mouseLeave = () => {
+    this.quickTos.opacity(0);
+  };
+
+  animate = (amount = 5) => {
+    clearTimeout(this.timeout);
+
+    gsap.set(this.DOM.SVG, {
+      strokeDashoffset: 0,
+    });
+
+    gsap.to(this.DOM.SVG, {
+      ease: "none",
+      overwrite: true,
+      duration: amount,
+      strokeDashoffset: -150,
+    });
+
+    this.timeout = setTimeout(() => {
+      this.timeoutCallback();
+    }, amount * 1000);
+  };
+
+  setup = () => {
+    window.addEventListener("mousemove", this.mouseMove);
+    document.addEventListener("mouseenter", this.mouseEnter);
+    document.addEventListener("mouseleave", this.mouseLeave);
+  };
+
+  cleanup = () => {
+    window.removeEventListener("mousemove", this.mouseMove);
+    document.removeEventListener("mouseenter", this.mouseEnter);
+    document.removeEventListener("mouseleave", this.mouseLeave);
+  };
+}
 export class GalleryController {
   DOM;
   data: DataType;
   container;
   activeIndex = 0;
   animating = false;
+  booted = false;
+  cursor: Cursor;
 
   constructor(containerSelector: string, data: DataType) {
     this.data = data;
@@ -57,12 +145,20 @@ export class GalleryController {
     this.setup();
     this.onResize();
     this.initialAnimation();
+
+    this.cursor = new Cursor(() => this.goToSlide(this.activeIndex + 1));
   }
 
   initialAnimation = () => {
     const { activeIndex } = this;
     const { titles } = this.DOM;
-    const tl = gsap.timeline({ paused: true });
+    const tl = gsap.timeline({
+      paused: true,
+      onComplete: () => {
+        this.booted = true;
+        this.cursor.animate();
+      },
+    });
     const slides = this.container?.querySelectorAll(slideItemClass);
 
     if (slides) {
@@ -110,16 +206,23 @@ export class GalleryController {
     const { DOM, activeIndex } = this;
     if (!DOM || !DOM.backgrounds || !DOM.backgrounds) return;
 
-    gsap.set(DOM.backgrounds, { scale: 2.5 });
-    DOM.images.forEach((img, index) => {
-      const isActive = index === activeIndex;
-      const position = getPositions(index, activeIndex, img, DOM.slides[index]);
-      gsap.set(img, {
-        x: position.x,
-        y: position.y,
-        scale: isActive ? 1 : 0.5,
+    const setupImages = () => {
+      gsap.set(DOM.backgrounds, { scale: 2.5 });
+      DOM.images.forEach((img, index) => {
+        const isActive = index === activeIndex;
+        const position = getPositions(
+          index,
+          activeIndex,
+          img,
+          DOM.slides[index],
+        );
+        gsap.set(img, {
+          x: position.x,
+          y: position.y,
+          scale: isActive ? 1 : 0.5,
+        });
       });
-    });
+    };
 
     const setupTitles = () => {
       const { DOM } = this;
@@ -148,7 +251,7 @@ export class GalleryController {
       });
     };
 
-    const setupWheel = () => {
+    const setupListeners = () => {
       Observer.create({
         type: "wheel,touch",
         preventDefault: true,
@@ -159,16 +262,24 @@ export class GalleryController {
           if (!this.animating) this.goToSlide(this.activeIndex + 1);
         },
       });
-    };
 
-    const setupListeners = () => {
+      const slideClick = (slide: HTMLDivElement, index: number) => {
+        if (index === this.activeIndex) return;
+        gsap.to(slide, { xPercent: 0, yPercent: 0, duration: 0.2 });
+        this.goToSlide(index);
+      };
+
+      this.DOM.slides?.forEach((slide, index) => {
+        slide.addEventListener("click", () => slideClick(slide, index));
+      });
+
       window.addEventListener("resize", this.onResize);
       window.addEventListener("resize", this.onResize);
       this.DOM.next?.addEventListener("click", this.nextSlide);
       this.DOM.prev?.addEventListener("click", this.prevSlide);
     };
 
-    setupWheel();
+    setupImages();
     setupTitles();
     setupListeners();
   };
@@ -182,17 +293,10 @@ export class GalleryController {
   };
 
   goToSlide = (idx: number) => {
-    if (
-      this.animating ||
-      idx < 0 ||
-      idx === this.data.length ||
-      !this.DOM ||
-      !this.DOM.backgrounds
-    )
-      return;
+    if (idx < 0 || idx === this.data.length) return;
     this.animating = true;
-    const { DOM, activeIndex } = this;
-    const direction = activeIndex < idx ? "prev" : "next";
+
+    this.cursor.animate(5);
     const tl = gsap.timeline({
       paused: true,
       onComplete: () => {
@@ -201,91 +305,119 @@ export class GalleryController {
       },
     });
 
-    const wrapper = gsap.utils.wrap([...DOM.slides]);
-    const activeSlide = wrapper(idx);
-    tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0);
+    const { DOM, activeIndex } = this;
+    const direction = activeIndex < idx ? "prev" : "next";
 
-    DOM.images.forEach((img, index) => {
-      const pos = getPositions(index, idx, img, DOM.slides[index]);
-      tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0);
-    });
+    const animateWrapper = () => {
+      if (DOM.wrapper && DOM.slides) {
+        const activeSlide = DOM.slides[idx];
+        tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0);
+      }
+    };
 
-    // Animate background
-    const bgItems = this.container?.querySelectorAll(".background-item");
-    if (bgItems) {
-      const percent = 50;
-      bgItems.forEach((item, index) => {
-        if (index === idx) {
-          tl.fromTo(
-            item,
-            {
-              opacity: 0,
-              xPercent: direction === "next" ? -percent : percent,
-            },
-            {
-              opacity: 1,
-              xPercent: 0,
-            },
-            0,
-          );
-        } else {
-          tl.to(
-            item,
-            {
-              opacity: 0,
-              xPercent: direction === "next" ? percent : -percent,
-            },
-            0,
-          );
-        }
+    const animateImages = () => {
+      if (DOM.images) {
+        DOM.images.forEach((img, index) => {
+          const pos = getPositions(index, idx, img, DOM.slides[index]);
+          tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0);
+        });
+      }
+    };
+
+    const animateBackground = () => {
+      // Animate background
+      const bgItems = this.container?.querySelectorAll(".background-item");
+      if (bgItems) {
+        const percent = 50;
+        bgItems.forEach((item, index) => {
+          if (index === idx) {
+            tl.fromTo(
+              item,
+              {
+                opacity: 0,
+                xPercent: direction === "next" ? -percent : percent,
+              },
+              {
+                opacity: 1,
+                xPercent: 0,
+              },
+              0,
+            );
+          } else {
+            tl.to(
+              item,
+              {
+                opacity: 0,
+                xPercent: direction === "next" ? percent : -percent,
+              },
+              0,
+            );
+          }
+        });
+      }
+    };
+
+    const animateTitles = () => {
+      if (!DOM.titles) return;
+
+      // Animate Titles
+      const yPercent = 5;
+      const xPercent = 100;
+
+      const charWraps = [...DOM.titles].map((item, index) => {
+        return item.querySelectorAll(".char-wrap");
       });
-    }
 
-    // Animate Titles
-    const yPercent = 5;
-    const xPercent = 100;
-    const prevTitles = DOM.titles[activeIndex].querySelectorAll(".char-wrap");
-    const currentTitles = DOM.titles[idx].querySelectorAll(".char-wrap");
+      gsap.killTweensOf(charWraps);
+      const prevTitles = charWraps[activeIndex];
+      const currentTitles = charWraps[idx];
 
-    tl.to(
-      prevTitles,
-      {
-        duration: 0.5,
-        opacity: 0,
-        yPercent: direction === "next" ? -yPercent : yPercent,
-        xPercent: direction === "next" ? xPercent : -xPercent,
-      },
-      0,
-    );
+      tl.to(
+        prevTitles,
+        {
+          duration: 0.5,
+          opacity: 0,
+          yPercent: direction === "next" ? -yPercent : yPercent,
+          xPercent: direction === "next" ? xPercent : -xPercent,
+        },
+        0,
+      );
 
-    tl.fromTo(
-      currentTitles,
-      {
-        opacity: 0,
-        yPercent: direction === "next" ? yPercent : -yPercent,
-        xPercent: direction === "next" ? -xPercent : xPercent,
-      },
-      {
-        duration: 0.5,
-        opacity: 1,
-        yPercent: 0,
-        xPercent: 0,
-      },
-      0.2,
-    );
+      tl.fromTo(
+        currentTitles,
+        {
+          opacity: 0,
+          yPercent: direction === "next" ? yPercent : -yPercent,
+          xPercent: direction === "next" ? -xPercent : xPercent,
+        },
+        {
+          duration: 0.5,
+          opacity: 1,
+          yPercent: 0,
+          xPercent: 0,
+        },
+        0.2,
+      );
+    };
+
+    animateWrapper();
+    animateImages();
+    animateBackground();
+    animateTitles();
 
     tl.play();
   };
 
   nextSlide = () => {
-    this.goToSlide(this.activeIndex + 1);
+    if (this.booted && !this.animating) this.goToSlide(this.activeIndex + 1);
   };
 
   prevSlide = () => {
-    this.goToSlide(this.activeIndex - 1);
+    if (this.booted && !this.animating) this.goToSlide(this.activeIndex - 1);
   };
 
   cleanup = () => {
+    this.cursor.cleanup();
     window.removeEventListener("resize", this.onResize);
     window.addEventListener("resize", this.onResize);
     this.DOM.next?.addEventListener("click", this.nextSlide);

@@ -23,6 +23,7 @@
 }
 
 body {
+  cursor: none;
   overscroll-behavior: none;
 }
 
@@ -50,7 +51,7 @@ h1 {
   color: white;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path:inset(0% 19.9% 0% 19.2%);
+  clip-path: inset(0% 19.9% 0% 19.2%);
 }
 
 .text-outline {
