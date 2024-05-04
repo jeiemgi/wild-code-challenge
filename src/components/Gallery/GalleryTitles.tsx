@@ -43,7 +43,7 @@ const TitleClip = styled.span`
 function GalleryTitles({ data }: { data: DataType }) {
   return (
     <div className={"fixed left-0 top-0 size-full items-center justify-center"}>
-      <div className={"relative mx-auto flex h-full w-[54%] items-center"}>
+      <div className={"relative mx-auto flex size-full items-center"}>
         {data.map((item, index) => {
           return (
             <div

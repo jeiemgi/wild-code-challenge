@@ -156,6 +156,7 @@ export class GalleryController {
     this.setup();
     this.onResize();
     this.initialAnimation();
+    // this.goToSlide(this.activeIndex);
   }
 
   initialAnimation = () => {
@@ -172,21 +173,31 @@ export class GalleryController {
       const slides = this.container?.querySelectorAll(slideItemClass);
       if (slides) {
         // Initial 2 items.
-        const inViewItems = [
-          slides[activeIndex],
-          slides[activeIndex + 1],
-          slides[activeIndex - 1],
-        ];
 
-        tl.from(inViewItems, {
-          scale: 0,
-          rotate: -10,
-          yPercent: -50,
-          xPercent: 180,
-          ease: "expo.out",
-          duration: 1,
-          delay: 1,
-        });
+        const activeSlide = slides[activeIndex];
+        const nextSlide = slides[activeIndex + 1];
+
+        tl.from(
+          activeSlide,
+          {
+            rotate: 20,
+            xPercent: -250,
+            duration: 1,
+            ease: "power2.out",
+          },
+          0.2,
+        );
+
+        tl.from(
+          nextSlide,
+          {
+            duration: 0.5,
+            rotate: -10,
+            xPercent: 300,
+            ease: "power2.out",
+          },
+          0.2,
+        );
       }
     };
 
@@ -195,10 +206,9 @@ export class GalleryController {
         tl.to(
           this.DOM.backgrounds[activeIndex],
           {
-            scale: 2,
             opacity: 1,
-            duration: 2,
-            ease: "circ.inOut",
+            duration: 1,
+            ease: "circ.out",
           },
           0,
         );
@@ -210,8 +220,8 @@ export class GalleryController {
       if (this.DOM.titles) {
         const title = this.DOM.titles[activeIndex];
         const charWrappers = title.querySelectorAll(".char-wrap");
-        tl.set(charWrappers, { opacity: 1 });
-        tl.to(charWrappers, { xPercent: 0, ease: "expo.out", duration: 2 }, 2);
+        tl.set(".char-wrap", { opacity: 1 }, 0);
+        tl.to(charWrappers, { xPercent: 0, ease: "circ.out", duration: 1 }, 1);
       }
     };
 
@@ -247,16 +257,14 @@ export class GalleryController {
     const setupTitles = () => {
       const { DOM } = this;
       if (!DOM.wrapper || (DOM.slides && DOM.slides?.length < 1)) return;
-      DOM.titles.forEach((title, index) => {
-        if (index === activeIndex) title.classList.add("gallery-title--active");
 
-        const split = new SplitText(title, {
+      const splitText = (h1: HTMLHeadingElement) => {
+        const split = new SplitText(h1, {
           type: "lines,words,chars",
           linesClass: clsx("line"),
           wordsClass: clsx("word"),
           charsClass: clsx("char"),
         });
-
         split.chars.forEach((char) => {
           // We need an additional wrapper on the text to animate the content.
           if (char.textContent) {
@@ -268,6 +276,14 @@ export class GalleryController {
             char.append(div);
           }
         });
+      };
+
+      DOM.titles.forEach((title, index) => {
+        const h1Els = title.querySelectorAll("h1");
+        h1Els.forEach((h1) => splitText(h1));
+
+        if (index === activeIndex) title.classList.add("gallery-title--active");
+        else title.classList.remove("gallery-title--active");
       });
     };
 
@@ -333,33 +349,33 @@ export class GalleryController {
 
     const isRight = newIndex > this.activeIndex;
 
-    const animateWrapper = () => {
+    const animateWrapper = (start: number) => {
       if (this.DOM.wrapper && this.DOM.slides) {
         const activeSlide = this.DOM.slides[newIndex];
         tl.to(
           this.DOM.wrapper,
           { x: -(activeSlide.clientWidth * newIndex) },
-          0.2,
+          start,
         );
       }
     };
 
-    const animateImages = () => {
+    const animateImages = (start: number) => {
       this.DOM.images?.forEach((img, imgIndex) => {
         if (this.DOM.slides) {
           const slide = this.DOM.slides[imgIndex];
           const scale = imgIndex === newIndex ? 1 : 0.5;
           const pos = getPositions(imgIndex, newIndex, img, slide);
-          tl.to(img, { ...pos, scale }, 0.2);
+          tl.to(img, { ...pos, scale }, start);
         }
       });
     };
 
-    const animateBackground = () => {
+    const animateBackground = (start: number) => {
       // Animate background
       const bgItems = this.container?.querySelectorAll(".background-item");
       if (bgItems) {
-        const percent = 20;
+        const percent = 50;
         bgItems.forEach((item, index) => {
           if (index === newIndex) {
             tl.fromTo(
@@ -372,7 +388,7 @@ export class GalleryController {
                 opacity: 1,
                 xPercent: 0,
               },
-              0,
+              start,
             );
           } else {
             tl.to(
@@ -381,55 +397,83 @@ export class GalleryController {
                 opacity: 0,
                 xPercent: isRight ? percent : -percent,
               },
-              0,
+              start,
             );
           }
         });
       }
     };
 
-    const animateTitles = () => {
+    const animateTitles = (start: number, enterDelay: number) => {
       if (!this.DOM.titles) return;
-      const yPercent = 20;
+      const yPercent = 50;
       const xPercent = 100;
 
       this.DOM.titles.forEach((title, index) => {
-        const charWraps = title.querySelectorAll(".char-wrap");
-
         if (newIndex === index) {
-          tl.fromTo(
-            charWraps,
-            {
-              opacity: 1,
-              yPercent: isRight ? -yPercent : yPercent,
-              xPercent: isRight ? xPercent : -xPercent,
-            },
-            {
-              opacity: 1,
-              yPercent: 0,
-              xPercent: 0,
-            },
-            0.3,
+          const lines = [...title.querySelectorAll(".line")];
+          const charWraps = lines.map((line) =>
+            line.querySelectorAll(".char-wrap"),
           );
-        } else if (index === this.activeIndex) {
-          tl.to(
-            charWraps,
+          console.log(charWraps);
+
+          tl.fromTo(
+            title,
             {
               yPercent: isRight ? yPercent : -yPercent,
               xPercent: isRight ? -xPercent : xPercent,
             },
-            0,
+            {
+              yPercent: 0,
+              xPercent: 0,
+              duration: 0.5,
+            },
+            start,
+          );
+
+          tl.fromTo(
+            charWraps,
+            {
+              opacity: 1,
+              xPercent: isRight ? xPercent : -xPercent,
+            },
+            {
+              opacity: 1,
+              xPercent: 0,
+              duration: 0.5,
+            },
+            start + enterDelay,
+          );
+        } else if (index === this.activeIndex) {
+          const charWraps = title.querySelectorAll(".char-wrap");
+          tl.to(
+            title,
+            {
+              yPercent: isRight ? yPercent : -yPercent,
+              xPercent: isRight ? -xPercent : xPercent,
+            },
+            start,
+          );
+          tl.to(
+            charWraps,
+            {
+              opacity: 0,
+              duration: 0.4,
+            },
+            start,
           );
         } else {
+          const charWraps = title.querySelectorAll(".char-wrap");
           gsap.set(charWraps, { opacity: 0 });
+          gsap.set(title, { xPercent: 0, yPercent: 0 });
         }
       });
     };
 
-    animateTitles();
-    animateImages();
-    animateWrapper();
-    animateBackground();
+    animateTitles(0, 0.2);
+    animateWrapper(0);
+    animateBackground(0);
+    animateImages(0);
 
     tl.play();
   };
