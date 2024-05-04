@@ -8,13 +8,14 @@ const Background = styled.div`
   width: 100%;
   height: 100%;
   position: absolute;
-  background-size: 100%;
+  background-size: cover;
   background-position: center;
+  transform: scale(2);
 `;
 
 function GalleryBackground({ data }: { data: DataType }) {
   return (
-    <div className={"absolute size-full overflow-hidden"}>
+    <div className={"absolute flex size-full items-center overflow-hidden"}>
       {data.map((_, index) => {
         return (
           <Background

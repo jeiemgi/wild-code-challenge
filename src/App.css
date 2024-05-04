@@ -27,47 +27,27 @@ body {
   overscroll-behavior: none;
 }
 
-h1 {
-  font-kerning: none;
-  -webkit-text-rendering: optimizeSpeed;
-  text-rendering: optimizeSpeed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+.gallery-title {
+  pointer-events: none;
 }
 
-.heading--1 {
-  font-family: "Tungsten", serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 13.75rem;
-  line-height: 80%;
-  text-align: center;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.gallery-title--active {
+  pointer-events: all;
 }
 
-.clip-text {
-  width: 100%;
-  color: white;
-  background-clip: text;
-  -webkit-background-clip: text;
-  clip-path: inset(0% 18.2% 0% 20.9%);
+.char-wrap,
+.char,
+.word,
+.line {
+  overflow: hidden;
+  line-height: 10rem;
 }
 
-.text-outline {
-  color: transparent;
-  -webkit-text-stroke-width: 1px;
-  -webkit-text-stroke-color: white;
+.char-wrap {
+  opacity: 0;
+  padding-top: 0.6rem;
+  line-height: 10rem;
+  max-height: 10rem;
+  bottom: -2rem;
 }
 
-.slide-item--active img {
-  border-color: green;
-}
-
-.slide-item--prev img {
-  border-color: yellow;
-}
-
-.slide-item--next img {
-  border-color: blue;
-}

@@ -39,6 +39,7 @@ const Cursor = styled.div`
     stroke-width: 2;
     stroke-dasharray: 150;
     stroke-dashoffset: 150;
+    transform: translateY(-2px) rotate(-90deg);
   }
 `;
 
@@ -46,7 +47,7 @@ function GalleryUI() {
   return (
     <>
       <Cursor id="ui-cursor">
-        <svg height="46" width="46">
+        <svg height="46" width="46" strokeLinecap={"round"}>
           <circle cx="22" cy="22" r="21" />
         </svg>
       </Cursor>

@@ -7,7 +7,7 @@ function GallerySlides({ data }: { data: DataType }) {
       <div
         className={clsx(
           "slider-wrapper",
-          "absolute left-1/3 top-0 flex h-full items-center p-4",
+          "absolute left-1/3 top-0 flex h-full items-center p-4 will-change-transform",
         )}
       >
         {data.map((item, index) => {

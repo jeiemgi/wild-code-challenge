@@ -1,8 +1,9 @@
 import { gsap, Observer, SplitText } from "@/js/gsap.ts";
 import { DataType } from "@/js/data.ts";
 import { MouseEvent } from "react";
+import { clsx } from "clsx";
 
-const MARGIN = 16;
+const AUTO_PLAY_DURATION = 5;
 const slideItemClass = ".slide-item";
 
 const getPositions = (
@@ -11,19 +12,31 @@ const getPositions = (
   item: HTMLDivElement,
   container?: Element | null,
 ) => {
+  const margin = 16;
   let posX = 0;
   let posY = 0;
 
   const isActive = idx === activeIndex;
   const isPrev = idx === activeIndex - 1;
+  const isNext = idx === activeIndex + 1;
 
   const containerH = container ? container.clientHeight : window.innerHeight;
-
-  if (isPrev) posX = -(item.clientWidth / 2) - MARGIN;
-  if (isActive) posY = (containerH - item.clientHeight) / 2;
-  else if (isPrev) posY = containerH - item.clientHeight / 2;
-  else if (idx < activeIndex - 1) posY = containerH;
-  else if (idx > activeIndex + 1) posY = -item.clientHeight / 2;
+  if (isActive) {
+    posX = 0;
+    posY = (containerH - item.clientHeight) / 2;
+  } else if (isPrev) {
+    posX = -(item.clientWidth / 2) - margin;
+    posY = containerH - item.clientHeight / 2;
+  } else if (isNext) {
+    posY = 0;
+    posX = -margin;
+  } else if (idx > activeIndex) {
+    posY = 0;
+    posX = -margin;
+  } else {
+    posY = containerH;
+    posX = -margin;
+  }
 
   return { x: posX, y: posY };
 };
@@ -37,12 +50,10 @@ class Cursor {
     SVG: null,
   };
 
-  isInView = false;
+  timeline: GSAPTimeline;
   quickTos;
-  timeout: number = 0;
-  timeoutCallback: () => void;
 
-  constructor(callback: () => void) {
+  constructor(animationDuration: number) {
     const container = document.querySelector<HTMLDivElement>("#ui-cursor");
 
     this.DOM = {
@@ -64,8 +75,14 @@ class Cursor {
         ease: "power3.out",
       }),
     };
-    gsap.set(this.DOM.SVG, { rotate: -90, y: -2 });
-    this.timeoutCallback = callback;
+
+    this.timeline = gsap.timeline({ paused: true });
+    this.timeline.to(this.DOM.SVG, {
+      ease: "none",
+      strokeDashoffset: -150,
+      duration: animationDuration,
+    });
+
     this.setup();
   }
 
@@ -82,23 +99,15 @@ class Cursor {
     this.quickTos.opacity(0);
   };
 
-  animate = (amount = 5) => {
-    clearTimeout(this.timeout);
+  play = () => {
+    console.log("restart-play cursor");
+    this.timeline.restart();
+    this.timeline.play(0);
+  };
 
-    gsap.set(this.DOM.SVG, {
-      strokeDashoffset: 0,
-    });
-
-    gsap.to(this.DOM.SVG, {
-      ease: "none",
-      overwrite: true,
-      duration: amount,
-      strokeDashoffset: -150,
-    });
-
-    this.timeout = setTimeout(() => {
-      this.timeoutCallback();
-    }, amount * 1000);
+  reverse = () => {
+    console.log("reverse cursor");
+    this.timeline.reverse();
   };
 
   setup = () => {
@@ -113,14 +122,16 @@ class Cursor {
     document.removeEventListener("mouseleave", this.mouseLeave);
   };
 }
+
 export class GalleryController {
   DOM;
-  data: DataType;
-  container;
   activeIndex = 0;
   animating = false;
   booted = false;
-  cursor: Cursor;
+  container;
+  data: DataType;
+  timeoutId: number = 0;
+  cursor: Cursor = new Cursor(AUTO_PLAY_DURATION);
 
   constructor(containerSelector: string, data: DataType) {
     this.data = data;
@@ -145,59 +156,68 @@ export class GalleryController {
     this.setup();
     this.onResize();
     this.initialAnimation();
-
-    this.cursor = new Cursor(() => this.goToSlide(this.activeIndex + 1));
   }
 
   initialAnimation = () => {
     const { activeIndex } = this;
-    const { titles } = this.DOM;
+
     const tl = gsap.timeline({
       paused: true,
       onComplete: () => {
         this.booted = true;
-        this.cursor.animate();
       },
     });
-    const slides = this.container?.querySelectorAll(slideItemClass);
 
-    if (slides) {
-      // Initial 2 items.
-      const inViewItems = [
-        slides[activeIndex],
-        slides[activeIndex + 1],
-        slides[activeIndex - 1],
-      ];
-      tl.from(inViewItems, {
-        scale: 0,
-        rotate: -10,
-        yPercent: -50,
-        xPercent: 180,
-        ease: "circ.out",
-        duration: 1.5,
-        delay: 1,
-      });
-    }
+    const animateImages = () => {
+      const slides = this.container?.querySelectorAll(slideItemClass);
+      if (slides) {
+        // Initial 2 items.
+        const inViewItems = [
+          slides[activeIndex],
+          slides[activeIndex + 1],
+          slides[activeIndex - 1],
+        ];
 
-    // Background fade - in.
-    const bgItems = this.container?.querySelectorAll(".background-item");
-    if (bgItems) {
-      tl.to(
-        bgItems[activeIndex],
-        {
-          scale: 2,
-          opacity: 1,
-          duration: 2,
-          ease: "circ.inOut",
-        },
-        0,
-      );
-    }
+        tl.from(inViewItems, {
+          scale: 0,
+          rotate: -10,
+          yPercent: -50,
+          xPercent: 180,
+          ease: "expo.out",
+          duration: 1,
+          delay: 1,
+        });
+      }
+    };
 
-    if (titles) {
-      const wrappers = titles[activeIndex].querySelectorAll(".char-wrap");
-      tl.to(wrappers, { xPercent: 0, duration: 1 }, 2);
-    }
+    const animateBackground = () => {
+      if (this.DOM.backgrounds) {
+        tl.to(
+          this.DOM.backgrounds[activeIndex],
+          {
+            scale: 2,
+            opacity: 1,
+            duration: 2,
+            ease: "circ.inOut",
+          },
+          0,
+        );
+      }
+    };
+
+    const animateTitle = () => {
+      // Initial animation
+      if (this.DOM.titles) {
+        const title = this.DOM.titles[activeIndex];
+        const charWrappers = title.querySelectorAll(".char-wrap");
+        tl.set(charWrappers, { opacity: 1 });
+        tl.to(charWrappers, { xPercent: 0, ease: "expo.out", duration: 2 }, 2);
+      }
+    };
+
+    animateImages();
+    animateBackground();
+    animateTitle();
 
     tl.play();
   };
@@ -227,27 +247,27 @@ export class GalleryController {
     const setupTitles = () => {
       const { DOM } = this;
       if (!DOM.wrapper || (DOM.slides && DOM.slides?.length < 1)) return;
-      DOM.titles.forEach((title) => {
+      DOM.titles.forEach((title, index) => {
+        if (index === activeIndex) title.classList.add("gallery-title--active");
+
         const split = new SplitText(title, {
-          type: "chars,words",
-          linesClass: "overflow-hidden",
-          charsClass: "overflow-hidden",
+          type: "lines,words,chars",
+          linesClass: clsx("line"),
+          wordsClass: clsx("word"),
+          charsClass: clsx("char"),
         });
-        const charsWrappers: HTMLDivElement[] = [];
+
         split.chars.forEach((char) => {
-          const div = document.createElement("div");
-          div.classList.add("char-wrap");
-          div.style.position = "relative";
-          div.style.display = "inline-block";
-          div.style.overflow = "hidden";
+          // We need an additional wrapper on the text to animate the content.
           if (char.textContent) {
+            const div = document.createElement("div");
             div.append(char.textContent);
+            div.classList.add("char-wrap");
+            gsap.set(div, { xPercent: 100 });
             char.innerHTML = "";
             char.append(div);
-            charsWrappers.push(div);
           }
         });
-        gsap.set(charsWrappers, { xPercent: 100 });
       });
     };
 
@@ -292,50 +312,61 @@ export class GalleryController {
     }
   };
 
-  goToSlide = (idx: number) => {
-    if (idx < 0 || idx === this.data.length) return;
-    this.animating = true;
+  goToSlide = (newIndex: number) => {
+    if (
+      newIndex < 0 ||
+      newIndex === this.activeIndex ||
+      newIndex > this.data.length - 1
+    )
+      return;
 
-    this.cursor.animate(5);
+    console.log("goToSlide", newIndex);
+
+    this.animating = true;
     const tl = gsap.timeline({
       paused: true,
       onComplete: () => {
+        this.activeIndex = newIndex;
         this.animating = false;
-        this.activeIndex = idx;
       },
     });
 
-    const { DOM, activeIndex } = this;
-    const direction = activeIndex < idx ? "prev" : "next";
+    const isRight = newIndex > this.activeIndex;
 
     const animateWrapper = () => {
-      if (DOM.wrapper && DOM.slides) {
-        const activeSlide = DOM.slides[idx];
-        tl.to(DOM.wrapper, { x: -(activeSlide.clientWidth * idx) }, 0.2);
+      if (this.DOM.wrapper && this.DOM.slides) {
+        const activeSlide = this.DOM.slides[newIndex];
+        tl.to(
+          this.DOM.wrapper,
+          { x: -(activeSlide.clientWidth * newIndex) },
+          0.2,
+        );
       }
     };
 
     const animateImages = () => {
-      if (DOM.images) {
-        DOM.images.forEach((img, index) => {
-          const pos = getPositions(index, idx, img, DOM.slides[index]);
-          tl.to(img, { ...pos, scale: index === idx ? 1 : 0.5 }, 0.2);
-        });
-      }
+      this.DOM.images?.forEach((img, imgIndex) => {
+        if (this.DOM.slides) {
+          const slide = this.DOM.slides[imgIndex];
+          const scale = imgIndex === newIndex ? 1 : 0.5;
+          const pos = getPositions(imgIndex, newIndex, img, slide);
+          tl.to(img, { ...pos, scale }, 0.2);
+        }
+      });
     };
 
     const animateBackground = () => {
       // Animate background
       const bgItems = this.container?.querySelectorAll(".background-item");
       if (bgItems) {
-        const percent = 50;
+        const percent = 20;
         bgItems.forEach((item, index) => {
-          if (index === idx) {
+          if (index === newIndex) {
             tl.fromTo(
               item,
               {
                 opacity: 0,
-                xPercent: direction === "next" ? -percent : percent,
+                xPercent: isRight ? -percent : percent,
               },
               {
                 opacity: 1,
@@ -348,7 +379,7 @@ export class GalleryController {
               item,
               {
                 opacity: 0,
-                xPercent: direction === "next" ? percent : -percent,
+                xPercent: isRight ? percent : -percent,
               },
               0,
             );
@@ -358,69 +389,82 @@ export class GalleryController {
     };
 
     const animateTitles = () => {
-      if (!DOM.titles) return;
-
-      // Animate Titles
-      const yPercent = 5;
+      if (!this.DOM.titles) return;
+      const yPercent = 20;
       const xPercent = 100;
 
-      const charWraps = [...DOM.titles].map((item, index) => {
-        return item.querySelectorAll(".char-wrap");
+      this.DOM.titles.forEach((title, index) => {
+        const charWraps = title.querySelectorAll(".char-wrap");
+
+        if (newIndex === index) {
+          tl.fromTo(
+            charWraps,
+            {
+              opacity: 1,
+              yPercent: isRight ? -yPercent : yPercent,
+              xPercent: isRight ? xPercent : -xPercent,
+            },
+            {
+              opacity: 1,
+              yPercent: 0,
+              xPercent: 0,
+            },
+            0.3,
+          );
+        } else if (index === this.activeIndex) {
+          tl.to(
+            charWraps,
+            {
+              yPercent: isRight ? yPercent : -yPercent,
+              xPercent: isRight ? -xPercent : xPercent,
+            },
+            0,
+          );
+        } else {
+          gsap.set(charWraps, { opacity: 0 });
+        }
       });
-
-      gsap.killTweensOf(charWraps);
-      const prevTitles = charWraps[activeIndex];
-      const currentTitles = charWraps[idx];
-
-      tl.to(
-        prevTitles,
-        {
-          duration: 0.5,
-          opacity: 0,
-          yPercent: direction === "next" ? -yPercent : yPercent,
-          xPercent: direction === "next" ? xPercent : -xPercent,
-        },
-        0,
-      );
-
-      tl.fromTo(
-        currentTitles,
-        {
-          opacity: 0,
-          yPercent: direction === "next" ? yPercent : -yPercent,
-          xPercent: direction === "next" ? -xPercent : xPercent,
-        },
-        {
-          duration: 0.5,
-          opacity: 1,
-          yPercent: 0,
-          xPercent: 0,
-        },
-        0.3,
-      );
     };
 
-    animateWrapper();
-    animateImages();
-    animateBackground();
     animateTitles();
+    animateImages();
+    animateWrapper();
+    animateBackground();
 
     tl.play();
   };
 
+  start = () => {
+    console.log("this.activeIndex", this.activeIndex);
+    if (this.activeIndex < this.data.length - 1) {
+      clearTimeout(this.timeoutId);
+      this.cursor.play();
+      this.timeoutId = setTimeout(() => {
+        this.nextSlide();
+      }, AUTO_PLAY_DURATION * 1000);
+    }
+  };
+
   nextSlide = () => {
-    if (this.booted && !this.animating) this.goToSlide(this.activeIndex + 1);
+    console.log("click");
+    if (this.booted && !this.animating) {
+      this.goToSlide(this.activeIndex + 1);
+      // this.start();
+    }
   };
 
   prevSlide = () => {
-    if (this.booted && !this.animating) this.goToSlide(this.activeIndex - 1);
+    if (this.booted && !this.animating) {
+      this.goToSlide(this.activeIndex - 1);
+      // this.start();
+    }
   };
 
   cleanup = () => {
     this.cursor.cleanup();
     window.removeEventListener("resize", this.onResize);
-    window.addEventListener("resize", this.onResize);
-    this.DOM.next?.addEventListener("click", this.nextSlide);
-    this.DOM.prev?.addEventListener("click", this.prevSlide);
+    window.removeEventListener("resize", this.onResize);
+    this.DOM.next?.removeEventListener("click", this.nextSlide);
+    this.DOM.prev?.removeEventListener("click", this.prevSlide);
   };
 }
