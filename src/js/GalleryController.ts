@@ -1,127 +1,11 @@
-import { gsap, Observer, SplitText } from "@/js/gsap.ts";
+import Cursor from "@/js/Cursor.ts";
 import { DataType } from "@/js/data.ts";
-import { MouseEvent } from "react";
+import { gsap, Observer, SplitText } from "@/js/gsap.ts";
 import { clsx } from "clsx";
+import { getPositions } from "@/js/utils.ts";
 
 const AUTO_PLAY_DURATION = 5;
 const slideItemClass = ".slide-item";
-
-const getPositions = (
-  idx: number,
-  activeIndex: number,
-  item: HTMLDivElement,
-  container?: Element | null,
-) => {
-  const margin = 16;
-  let posX = 0;
-  let posY = 0;
-
-  const isActive = idx === activeIndex;
-  const isPrev = idx === activeIndex - 1;
-  const isNext = idx === activeIndex + 1;
-
-  const containerH = container ? container.clientHeight : window.innerHeight;
-  if (isActive) {
-    posX = 0;
-    posY = (containerH - item.clientHeight) / 2;
-  } else if (isPrev) {
-    posX = -(item.clientWidth / 2) - margin;
-    posY = containerH - item.clientHeight / 2;
-  } else if (isNext) {
-    posY = 0;
-    posX = -margin;
-  } else if (idx > activeIndex) {
-    posY = 0;
-    posX = -margin;
-  } else {
-    posY = containerH;
-    posX = -margin;
-  }
-
-  return { x: posX, y: posY };
-};
-
-class Cursor {
-  DOM: {
-    el: HTMLDivElement | null;
-    SVG: SVGElement | null;
-  } = {
-    el: null,
-    SVG: null,
-  };
-
-  timeline: GSAPTimeline;
-  quickTos;
-
-  constructor(animationDuration: number) {
-    const container = document.querySelector<HTMLDivElement>("#ui-cursor");
-
-    this.DOM = {
-      el: container,
-      SVG: container?.querySelector("svg") || null,
-    };
-
-    this.quickTos = {
-      opacity: gsap.quickTo(this.DOM.el, "opacity", {
-        duration: 0.3,
-        ease: "power4.out",
-      }),
-      x: gsap.quickTo(this.DOM.el, "x", {
-        duration: 0.2,
-        ease: "power3.out",
-      }),
-      y: gsap.quickTo(this.DOM.el, "y", {
-        duration: 0.2,
-        ease: "power3.out",
-      }),
-    };
-
-    this.timeline = gsap.timeline({ paused: true });
-    this.timeline.to(this.DOM.SVG, {
-      ease: "none",
-      strokeDashoffset: -150,
-      duration: animationDuration,
-    });
-
-    this.setup();
-  }
-
-  mouseMove = (e: MouseEvent) => {
-    this.quickTos.x(e.clientX, e.clientX);
-    this.quickTos.y(e.clientY, e.clientY);
-  };
-
-  mouseEnter = () => {
-    this.quickTos.opacity(1);
-  };
-
-  mouseLeave = () => {
-    this.quickTos.opacity(0);
-  };
-
-  play = () => {
-    console.log("restart-play cursor");
-    this.timeline.restart();
-    this.timeline.play(0);
-  };
-
-  reverse = () => {
-    console.log("reverse cursor");
-    this.timeline.reverse();
-  };
-
-  setup = () => {
-    window.addEventListener("mousemove", this.mouseMove);
-    document.addEventListener("mouseenter", this.mouseEnter);
-    document.addEventListener("mouseleave", this.mouseLeave);
-  };
-
-  cleanup = () => {
-    window.removeEventListener("mousemove", this.mouseMove);
-    document.removeEventListener("mouseenter", this.mouseEnter);
-    document.removeEventListener("mouseleave", this.mouseLeave);
-  };
-}
 
 export class GalleryController {
   DOM;
@@ -169,14 +53,12 @@ export class GalleryController {
       },
     });
 
-    const animateImages = () => {
+    const animateSlides = () => {
       const slides = this.container?.querySelectorAll(slideItemClass);
       if (slides) {
         // Initial 2 items.
-
         const activeSlide = slides[activeIndex];
         const nextSlide = slides[activeIndex + 1];
-
         tl.from(
           activeSlide,
           {
@@ -219,13 +101,30 @@ export class GalleryController {
       // Initial animation
       if (this.DOM.titles) {
         const title = this.DOM.titles[activeIndex];
-        const charWrappers = title.querySelectorAll(".char-wrap");
-        tl.set(".char-wrap", { opacity: 1 }, 0);
-        tl.to(charWrappers, { xPercent: 0, ease: "circ.out", duration: 1 }, 1);
+        const lines = title.querySelectorAll(".line");
+        lines.forEach((line, item) => {
+          const lineChars = line.querySelectorAll(".char-wrap");
+          tl.to(
+            lineChars,
+            {
+              opacity: 1,
+              duration: 1,
+              xPercent: 0,
+              stagger: {
+                from: "center",
+                amount: 0.1,
+              },
+            },
+            0.7,
+          );
+        });
+
+        // const charWrappers = title.querySelectorAll(".char-wrap");
+        // tl.to(charWrappers, { xPercent: 0, ease: "circ.out", duration: 1 }, 1);
       }
     };
 
-    animateImages();
+    animateSlides();
     animateBackground();
     animateTitle();
 
@@ -299,10 +198,10 @@ export class GalleryController {
         },
       });
 
-      const slideClick = (slide: HTMLDivElement, index: number) => {
-        if (index === this.activeIndex) return;
-        gsap.to(slide, { xPercent: 0, yPercent: 0, duration: 0.2 });
-        this.goToSlide(index);
+      const slideClick = (_: HTMLDivElement, index: number) => {
+        if (index !== this.activeIndex) {
+          this.goToSlide(index);
+        }
       };
 
       this.DOM.slides?.forEach((slide, index) => {
@@ -336,9 +235,8 @@ export class GalleryController {
     )
       return;
 
-    console.log("goToSlide", newIndex);
-
     this.animating = true;
+
     const tl = gsap.timeline({
       paused: true,
       onComplete: () => {
@@ -415,8 +313,6 @@ export class GalleryController {
           const charWraps = lines.map((line) =>
             line.querySelectorAll(".char-wrap"),
           );
-          console.log(charWraps);
-
           tl.fromTo(
             title,
             {
@@ -424,6 +320,10 @@ export class GalleryController {
               xPercent: isRight ? -xPercent : xPercent,
             },
             {
+              stagger: {
+                from: "edges",
+                amount: 0.02,
+              },
               yPercent: 0,
               xPercent: 0,
               duration: 0.5,
@@ -431,19 +331,16 @@ export class GalleryController {
             start,
           );
 
-          tl.fromTo(
-            charWraps,
-            {
-              opacity: 1,
-              xPercent: isRight ? xPercent : -xPercent,
-            },
-            {
-              opacity: 1,
-              xPercent: 0,
-              duration: 0.5,
-            },
-            start + enterDelay,
-          );
+          const fromVars = {
+            opacity: 1,
+            xPercent: isRight ? xPercent : -xPercent,
+          };
+          const toVars = {
+            opacity: 1,
+            xPercent: 0,
+            duration: 0.5,
+          };
+          tl.fromTo(charWraps, fromVars, toVars, start + enterDelay);
         } else if (index === this.activeIndex) {
           const charWraps = title.querySelectorAll(".char-wrap");
           tl.to(

@@ -1,5 +1,6 @@
-import styled, { css } from "styled-components";
 import { DataType } from "@/js/data.ts";
+import { Grid } from "@/components/Grid.tsx";
+import styled, { css } from "styled-components";
 
 const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
@@ -37,29 +38,27 @@ const TitleClip = styled.span`
   pointer-events: none;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path: inset(0% 18.2% 0% 20.9%);
+  clip-path: inset(0% 15.4% 0% 18.3%);
 `;
 
-function GalleryTitles({ data }: { data: DataType }) {
+const GalleryTitleDiv = styled(Grid)`
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+`;
+
+function GalleryTitle({ item }: { item: DataType[0] }) {
   return (
-    <div className={"fixed left-0 top-0 size-full items-center justify-center"}>
-      <div className={"relative mx-auto flex size-full items-center"}>
-        {data.map((item, index) => {
-          return (
-            <div
-              key={`GalleryTitle-${index}`}
-              className={"gallery-title absolute w-full"}
-            >
-              <TitleH1 $outline>{item.title}</TitleH1>
-              <TitleClip>
-                <TitleH1>{item.title}</TitleH1>
-              </TitleClip>
-            </div>
-          );
-        })}
+    <GalleryTitleDiv className={"gallery-title"}>
+      <div className={"relative col-span-6 col-start-4"}>
+        <TitleH1 $outline>{item.title}</TitleH1>
+        <TitleClip>
+          <TitleH1>{item.title}</TitleH1>
+        </TitleClip>
       </div>
-    </div>
+    </GalleryTitleDiv>
   );
 }
 
-export default GalleryTitles;
+export default GalleryTitle;

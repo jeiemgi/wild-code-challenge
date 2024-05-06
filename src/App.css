@@ -32,7 +32,7 @@ body {
 }
 
 .gallery-title--active {
-  pointer-events: all;
+  pointer-events: none;
 }
 
 .char-wrap,

@@ -1,4 +1,3 @@
-import { Grid } from "@/components/Grid.tsx";
 import styled from "styled-components";
 
 const Cursor = styled.div`
@@ -52,7 +51,7 @@ function GalleryUI() {
         </svg>
       </Cursor>
 
-      <Grid className={"fixed left-0 top-0 z-10"}>
+      {/*<Grid className={"fixed left-0 top-0 z-10"}>
         <div className="relative col-span-2 flex h-full overflow-hidden rounded-md bg-white/50 shadow-2xl backdrop-blur-3xl">
           <button
             id={"button-prev"}
@@ -71,7 +70,7 @@ function GalleryUI() {
             Next
           </button>
         </div>
-      </Grid>
+      </Grid>*/}
     </>
   );
 }

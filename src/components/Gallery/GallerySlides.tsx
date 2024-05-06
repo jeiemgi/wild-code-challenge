@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import { DataType } from "@/js/data.ts";
+import GalleryTitle from "@/components/Gallery/GalleryTitle";
 
 function GallerySlides({ data }: { data: DataType }) {
   return (
@@ -16,19 +17,27 @@ function GallerySlides({ data }: { data: DataType }) {
               key={`Gallery-Item-${index}`}
               className={clsx(
                 "slide-item",
-                "flex size-full items-start will-change-transform",
+                "relative flex size-full items-start",
               )}
             >
-              <img
-                src={item.image}
-                alt={`Image template ${index}`}
-                className={clsx(
-                  "slide-img",
-                  "h-3/4 w-full origin-top-right rounded-[40px] object-cover will-change-transform",
-                )}
-              />
+              <div
+                className={
+                  "slide-img h-3/4 w-full origin-top-right rounded-[40px] will-change-transform"
+                }
+              >
+                <img
+                  src={item.image}
+                  alt={`Image template ${index}`}
+                  className={"size-full object-cover"}
+                />
+              </div>
             </div>
           );
+        })}
+      </div>
+      <div className="slider-titles-wrapper size-full">
+        {data.map((item, index) => {
+          return <GalleryTitle item={item} key={`GalleryTitle-${index}`} />;
         })}
       </div>
     </div>
