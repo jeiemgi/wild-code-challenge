@@ -71,12 +71,14 @@ class Cursor {
   };
 
   setup = () => {
+    // @ts-expect-error: Types for this function are ambiguous.
     window.addEventListener("mousemove", this.mouseMove);
     document.addEventListener("mouseenter", this.mouseEnter);
     document.addEventListener("mouseleave", this.mouseLeave);
   };
 
   cleanup = () => {
+    // @ts-expect-error: Types for this function are ambiguous.
     window.removeEventListener("mousemove", this.mouseMove);
     document.removeEventListener("mouseenter", this.mouseEnter);
     document.removeEventListener("mouseleave", this.mouseLeave);

@@ -1,46 +1,83 @@
-import { clsx } from "clsx";
-import { DataType } from "@/js/data.ts";
+import styled from "styled-components";
 import GalleryTitle from "@/components/Gallery/GalleryTitle";
+import type { DataType } from "@/js/data.ts";
+
+const Slider = styled.div`
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+`;
+
+const SliderWrapper = styled.div`
+  top: 0;
+  left: 0;
+  height: 100%;
+  padding: 8px;
+  position: absolute;
+  will-change: transform;
+  display: flex;
+  flex-wrap: nowrap;
+`;
+
+const SliderItem = styled.div`
+  height: 100%;
+  display: flex;
+  position: relative;
+  align-items: start;
+  justify-content: end;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+
+  &.slide--active,
+  &.slide--next,
+  &.slide--prev {
+    pointer-events: all;
+    user-select: text;
+  }
+`;
+
+const SlideItemImage = styled.div`
+  width: 100%;
+  height: 75%;
+  border-radius: 40px;
+  pointer-events: none;
+  transform-origin: top;
+  overflow: hidden;
+  user-select: none;
+`;
 
 function GallerySlides({ data }: { data: DataType }) {
   return (
-    <div className={clsx("slider", "relative size-full overflow-hidden")}>
-      <div
-        className={clsx(
-          "slider-wrapper",
-          "absolute left-1/3 top-0 flex h-full items-center p-4 will-change-transform",
-        )}
-      >
+    <Slider className={"slider"}>
+      <SliderWrapper className={"slider-wrapper"}>
         {data.map((item, index) => {
           return (
-            <div
+            <SliderItem
+              data-index={index}
+              className={"slide-item"}
               key={`Gallery-Item-${index}`}
-              className={clsx(
-                "slide-item",
-                "relative flex size-full items-start",
-              )}
             >
-              <div
-                className={
-                  "slide-img h-3/4 w-full origin-top-right rounded-[40px] will-change-transform"
-                }
-              >
+              <SlideItemImage className={"slide-img"}>
                 <img
                   src={item.image}
                   alt={`Image template ${index}`}
-                  className={"size-full object-cover"}
+                  className={
+                    "pointer-events-none absolute left-0 top-0 size-full object-cover"
+                  }
                 />
-              </div>
-            </div>
+              </SlideItemImage>
+              <GalleryTitle
+                item={item}
+                data-title={item.title}
+                key={`GalleryTitle-${index}`}
+              />
+            </SliderItem>
           );
         })}
-      </div>
-      <div className="slider-titles-wrapper size-full">
-        {data.map((item, index) => {
-          return <GalleryTitle item={item} key={`GalleryTitle-${index}`} />;
-        })}
-      </div>
-    </div>
+      </SliderWrapper>
+    </Slider>
   );
 }
 

@@ -4,7 +4,7 @@ import styled from "styled-components";
 import GalleryUI from "@/components/Gallery/GalleryUI.tsx";
 import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
 import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
-import { GalleryController } from "@/js/GalleryController.ts";
+import GalleryController from "@/js/GalleryController.ts";
 import type { DataType } from "@/js/data.ts";
 
 const Wrapper = styled.main`

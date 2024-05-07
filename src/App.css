@@ -26,28 +26,3 @@ body {
   cursor: none;
   overscroll-behavior: none;
 }
-
-.gallery-title {
-  pointer-events: none;
-}
-
-.gallery-title--active {
-  pointer-events: none;
-}
-
-.char-wrap,
-.char,
-.word,
-.line {
-  overflow: hidden;
-  line-height: 10rem;
-}
-
-.char-wrap {
-  opacity: 0;
-  padding-top: 0.6rem;
-  line-height: 10rem;
-  max-height: 10rem;
-  bottom: -2rem;
-}
-

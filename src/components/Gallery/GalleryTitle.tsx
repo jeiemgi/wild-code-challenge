@@ -1,21 +1,25 @@
 import { DataType } from "@/js/data.ts";
-import { Grid } from "@/components/Grid.tsx";
 import styled, { css } from "styled-components";
 
 const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
   font-style: normal;
-  font-weight: 400;
   font-size: 13.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
+  display: inline !important;
 
-  font-kerning: none;
-  -webkit-text-rendering: optimizeSpeed;
-  text-rendering: optimizeSpeed;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  .char {
+    opacity: 0;
+    overflow: hidden;
+    will-change: transform;
+  }
+
+  .word,
+  .line {
+    overflow: hidden;
+  }
 
   ${(props) => {
     if (props.$outline) {
@@ -24,8 +28,35 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
         -webkit-text-stroke-width: 1px;
         -webkit-text-stroke-color: white;
       `;
+    } else {
+      return css`
+        color: #ffffff;
+      `;
     }
   }}
+`;
+
+const GalleryTitleDiv = styled.div`
+  top: 0;
+  left: 0;
+  position: absolute;
+  width: 50vw;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.gallery-title {
+    pointer-events: none;
+  }
+
+  .word,
+  .line,
+  .char {
+    padding-top: 0.06rem;
+    line-height: 11.5rem;
+    height: 11rem;
+  }
 `;
 
 const TitleClip = styled.span`
@@ -38,20 +69,13 @@ const TitleClip = styled.span`
   pointer-events: none;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path: inset(0% 15.4% 0% 18.3%);
+  clip-path: inset(0% 4.4% 0 4.4%);
 `;
 
-const GalleryTitleDiv = styled(Grid)`
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-`;
-
-function GalleryTitle({ item }: { item: DataType[0] }) {
+function GalleryTitle({ item, ...props }: { item: DataType[0] }) {
   return (
-    <GalleryTitleDiv className={"gallery-title"}>
-      <div className={"relative col-span-6 col-start-4"}>
+    <GalleryTitleDiv className={"gallery-title"} {...props}>
+      <div className="relative">
         <TitleH1 $outline>{item.title}</TitleH1>
         <TitleClip>
           <TitleH1>{item.title}</TitleH1>
