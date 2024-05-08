@@ -90,13 +90,16 @@ function GalleryTitles({ data }: { data: DataType }) {
             </Container>
 
             <CreditsContainer>
-              <Col $span={1} $start={11} className="credit pr-8">
-                <LabelSpan $color={"white"}>{item.subtitle}</LabelSpan> <br />
+              <Col $span={1} $start={11} className="credit">
+                <LabelSpan $color={"white"} className={"pr-8"}>
+                  {item.subtitle}
+                </LabelSpan>
+                <br />
                 <div className={"mb-4 text-right"}>
                   <LabelSpan $color={"white"}>{item.date}</LabelSpan>
                 </div>
                 <CreditsButton data-hover>
-                  <LabelSpan>Have a look</LabelSpan>
+                  <LabelSpan>HAVE A LOOK</LabelSpan>
                 </CreditsButton>
               </Col>
             </CreditsContainer>

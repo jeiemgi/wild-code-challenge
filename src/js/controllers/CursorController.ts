@@ -34,6 +34,10 @@ class CursorController {
         duration: 0.2,
         ease: "power3.out",
       }),
+      scale: gsap.quickTo(this.DOM.el, "scale", {
+        duration: 0.2,
+        ease: "power3.out",
+      }),
     };
 
     this.timeline = gsap.timeline({ paused: true });
@@ -49,6 +53,13 @@ class CursorController {
   mouseMove = (e: MouseEvent) => {
     this.quickTos.x(e.clientX, e.clientX);
     this.quickTos.y(e.clientY, e.clientY);
+  };
+
+  mouseDown = () => {
+    gsap.to(this.DOM.el, { scale: 0.8 });
+  };
+  mouseUp = () => {
+    gsap.to(this.DOM.el, { scale: 1 });
   };
 
   mouseEnter = () => {
@@ -79,6 +90,9 @@ class CursorController {
   setup = () => {
     // @ts-expect-error: Types for this function are ambiguous.
     window.addEventListener("mousemove", this.mouseMove);
+
+    document.addEventListener("mousedown", this.mouseDown);
+    document.addEventListener("mouseup", this.mouseUp);
     document.addEventListener("mouseenter", this.mouseEnter);
     document.addEventListener("mouseleave", this.mouseLeave);
   };
@@ -86,6 +100,8 @@ class CursorController {
   cleanup = () => {
     // @ts-expect-error: Types for this function are ambiguous.
     window.removeEventListener("mousemove", this.mouseMove);
+    document.removeEventListener("mousedown", this.mouseDown);
+    document.removeEventListener("mouseup", this.mouseUp);
     document.removeEventListener("mouseenter", this.mouseEnter);
     document.removeEventListener("mouseleave", this.mouseLeave);
   };

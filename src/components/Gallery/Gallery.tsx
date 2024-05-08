@@ -5,9 +5,9 @@ import GalleryUI from "@/components/Gallery/GalleryUI.tsx";
 import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
 import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
 import GalleryController from "@/js/controllers/GalleryController.ts";
-import type { DataType } from "@/js/data.ts";
 import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
 import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
+import type { DataType } from "@/js/data.ts";
 
 const Wrapper = styled.main`
   width: 100vw;
@@ -35,13 +35,15 @@ function Gallery({ data }: Props) {
   }, [data]);
 
   return (
-    <Wrapper id={"gallery-home"}>
-      <GalleryBackground data={data} />
-      <GallerySlides data={data} />
-      <GalleryTitles data={data} />
-      <GalleryPagination data={data} />
-      <GalleryUI />
-    </Wrapper>
+    <>
+      <Wrapper id={"gallery-home"}>
+        <GalleryBackground data={data} />
+        <GallerySlides data={data} />
+        <GalleryTitles data={data} />
+        <GalleryPagination data={data} />
+        <GalleryUI />
+      </Wrapper>
+    </>
   );
 }
 
