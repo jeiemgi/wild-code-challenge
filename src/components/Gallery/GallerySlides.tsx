@@ -15,9 +15,9 @@ const SliderWrapper = styled.div`
   height: 100%;
   padding: 8px;
   position: absolute;
-  will-change: transform;
   display: flex;
   flex-wrap: nowrap;
+  will-change: transform;
 `;
 
 const SliderItem = styled.div`
@@ -28,7 +28,7 @@ const SliderItem = styled.div`
   justify-content: end;
   pointer-events: none;
   user-select: none;
-  overflow: hidden;
+  will-change: transform;
 
   &.slide--active,
   &.slide--next,
@@ -39,13 +39,16 @@ const SliderItem = styled.div`
 `;
 
 const SlideItemImage = styled.div`
-  width: 100%;
-  height: 75%;
-  border-radius: 40px;
+  max-height: 75%;
+  position: relative;
+  border-radius: 10px;
   pointer-events: none;
   transform-origin: top;
   overflow: hidden;
   user-select: none;
+  border: solid 1px black;
+  will-change: transform;
+  aspect-ratio: 64/ 85;
 `;
 
 function GallerySlides({ data }: { data: DataType }) {

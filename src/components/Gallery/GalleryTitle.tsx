@@ -3,7 +3,7 @@ import styled, { css } from "styled-components";
 
 const Overlay = styled.div`
   top: 0;
-  position: absolute;
+  position: fixed;
   width: 100%;
   height: 100%;
   left: -20vw;
@@ -27,7 +27,8 @@ const Container = styled.div`
 const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
   font-style: normal;
-  font-size: 13.75rem;
+  // font-size: 13.75em;
+  font-size: clamp(120px, 13.75em, 200px);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
@@ -43,17 +44,25 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
   Fixes of spacing were needed, 
   the font has a weird behavior on the line-height.
    */
-  .char {
+  .char-wrap {
     opacity: 0;
+    line-height: 0.68em;
+    padding-top: 0.09em;
+    margin-top: -0.045em;
     overflow: hidden;
     will-change: transform;
+  }
+
+  .char {
     line-height: 0.68em;
     padding-top: 0.09em;
     margin-top: -0.045em;
   }
 
+  .char,
   .word,
   .line {
+    opacity: 1;
     overflow: hidden;
   }
 

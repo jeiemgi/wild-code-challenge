@@ -1,56 +1,48 @@
-export const animateCharsClass = ".char";
+import { gsap } from "@/js/gsap";
 
 export const animateTextIn = (
   title: HTMLDivElement,
   tl: GSAPTimeline,
   position: number = 0,
+  direction: number = 1,
 ) => {
+  const allChars = title.querySelectorAll(".char-wrap");
+  tl.set([title, allChars], { opacity: 1, yPercent: 0 }, 0);
+
   const wraps = title.querySelectorAll(".outline > .line");
   const wrapsFill = title.querySelectorAll(".fill > .line");
 
   const fromVars: GSAPTweenVars = {
-    yPercent: 120,
+    rotate: 20 * direction,
+    xPercent: 150 * direction,
   };
 
   const toVars: GSAPTweenVars = {
-    yPercent: 0,
-    duration: 0.8,
+    rotate: 0,
+    xPercent: 0,
+    duration: 0.5,
+    ease: "expo.out",
     stagger: {
-      amount: 0.2,
+      amount: 0.15,
       from: "center",
     },
-    ease: "expo.out",
   };
 
   wraps.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char");
-    tl.set(chars, { opacity: 1 }, 0);
+    const chars = wrap.querySelectorAll(".char-wrap");
     tl.fromTo(chars, fromVars, toVars, position);
   });
 
   wrapsFill.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char");
-    tl.set(chars, { opacity: 1 }, 0);
+    const chars = wrap.querySelectorAll(".char-wrap");
     tl.fromTo(chars, fromVars, toVars, position);
   });
 };
 
-export const animateTextOut = (
-  title: HTMLDivElement,
-  tl: GSAPTimeline,
-  position: number = 0,
-) => {
-  const titleLines = title.querySelectorAll(".line");
-
-  titleLines.forEach((line) => {
-    const lineChars = line.querySelectorAll(animateCharsClass);
-    tl.to(
-      lineChars,
-      {
-        yPercent: 120,
-        duration: 0.3,
-      },
-      position,
-    );
+export const animateTextOut = (title: HTMLDivElement, direction: number) => {
+  gsap.to(title, {
+    opacity: 0,
+    yPercent: 10 * direction,
+    duration: 0.2,
   });
 };

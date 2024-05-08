@@ -60,13 +60,11 @@ class Cursor {
   };
 
   play = () => {
-    console.log("restart-play cursor");
     this.timeline.restart();
     this.timeline.play(0);
   };
 
   reverse = () => {
-    console.log("reverse cursor");
     this.timeline.reverse();
   };
 

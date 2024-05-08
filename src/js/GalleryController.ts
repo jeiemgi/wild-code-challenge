@@ -1,11 +1,7 @@
 import Cursor from "@/js/Cursor.ts";
-import { getMeasures, splitTitle } from "@/js/utils.ts";
 import { gsap, Observer } from "@/js/gsap.ts";
-import {
-  animateCharsClass,
-  animateTextIn,
-  animateTextOut,
-} from "@/js/animations.ts";
+import { getMeasures, splitTitle } from "@/js/utils.ts";
+import { animateTextIn, animateTextOut } from "@/js/animations.ts";
 import type { DataType } from "@/js/data.ts";
 
 const AUTO_PLAY_DURATION = 5;
@@ -45,14 +41,14 @@ export class GalleryController {
     };
 
     this.setup();
-    this.onResize();
+    this.setupListeners();
     this.initialAnimation();
   }
 
   cleanup = () => {
     this.cursor.cleanup();
     this.DOM.slides?.forEach((slide) => {
-      slide.removeEventListener("click", this.clickSlide);
+      slide.removeEventListener("click", this.slideClick);
     });
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("resize", this.onResize);
@@ -60,11 +56,12 @@ export class GalleryController {
     this.DOM.prev?.removeEventListener("click", this.prevSlide);
   };
 
-  clickSlide = (e: MouseEvent) => {
+  slideClick = (e: MouseEvent) => {
     const target = e.target ? (e.target as HTMLDivElement) : e.target;
     const index = e.target! ? Number(target?.dataset.index) : 0;
-    if (!this.animating && index !== this.activeIndex) {
+    if (index !== this.activeIndex) {
       this.goToSlide(index);
+      this.start();
     }
   };
 
@@ -82,7 +79,35 @@ export class GalleryController {
     });
   };
 
+  setupListeners = () => {
+    Observer.create({
+      type: "wheel,touch",
+      preventDefault: true,
+      onUp: () => {
+        if (!this.animating && this.booted)
+          this.goToSlide(this.activeIndex - 1);
+      },
+      onDown: () => {
+        if (!this.animating && this.booted)
+          this.goToSlide(this.activeIndex + 1);
+      },
+    });
+    // Add click listener to slides
+    this.DOM.slides?.forEach((slide) => {
+      slide.addEventListener("click", this.slideClick);
+    });
+    window.addEventListener("resize", this.onResize);
+    window.addEventListener("resize", this.onResize);
+    this.DOM.next?.addEventListener("click", this.nextSlide);
+    this.DOM.prev?.addEventListener("click", this.prevSlide);
+  };
+
   setup = () => {
+    const setupWrapper = () => {
+      gsap.set(".slider-wrapper", {
+        width: (window.innerWidth / 3) * this.DOM.slides!.length,
+      });
+    };
     const setupSlides = () => {
       // Images
       this.DOM.slides?.forEach((slide, index) => {
@@ -107,32 +132,9 @@ export class GalleryController {
       if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
     };
 
-    const setupListeners = () => {
-      Observer.create({
-        type: "wheel,touch",
-        preventDefault: true,
-        onUp: () => {
-          if (!this.animating && this.booted)
-            this.goToSlide(this.activeIndex - 1);
-        },
-        onDown: () => {
-          if (!this.animating && this.booted)
-            this.goToSlide(this.activeIndex + 1);
-        },
-      });
-      // Add click listener to slides
-      this.DOM.slides?.forEach((slide) => {
-        slide.addEventListener("click", this.clickSlide);
-      });
-      window.addEventListener("resize", this.onResize);
-      window.addEventListener("resize", this.onResize);
-      this.DOM.next?.addEventListener("click", this.nextSlide);
-      this.DOM.prev?.addEventListener("click", this.prevSlide);
-    };
-
     this.handleActiveClassNames();
+    setupWrapper();
     setupSlides();
-    setupListeners();
   };
 
   initialAnimation = () => {
@@ -174,7 +176,7 @@ export class GalleryController {
     const animateCopy = () => {
       if (this.DOM.titles) {
         const title = this.DOM.titles[activeIndex];
-        animateTextIn(title, tl, 1);
+        animateTextIn(title, tl, 0.8);
       }
     };
 
@@ -186,11 +188,7 @@ export class GalleryController {
   };
 
   onResize = () => {
-    if (this.DOM && this.DOM.slides) {
-      gsap.set(".slider-wrapper", {
-        width: (window.innerWidth / 3) * this.DOM.slides?.length,
-      });
-    }
+    this.setup();
   };
 
   goToSlide = (newIndex: number) => {
@@ -202,9 +200,8 @@ export class GalleryController {
       return;
 
     this.animating = true;
-    this.activeIndex = newIndex;
     const prevIndex = this.activeIndex;
-    const isRight = newIndex > this.activeIndex;
+    this.activeIndex = newIndex;
     this.handleActiveClassNames();
 
     const tl = gsap.timeline({
@@ -240,15 +237,15 @@ export class GalleryController {
 
         const slideTitle =
           slide.querySelector<HTMLDivElement>(".gallery-title");
+
         if (slideTitle) {
           if (index === newIndex) {
-            animateTextIn(slideTitle, tl, start + 0.2);
+            animateTextIn(slideTitle, tl, start + 0.2, newIndex - prevIndex);
           } else if (index === prevIndex) {
-            animateTextOut(slideTitle, tl, start);
+            animateTextOut(slideTitle, newIndex - prevIndex);
           } else {
-            const titleChars = slideTitle.querySelectorAll(animateCharsClass);
-            // gsap.killTweensOf(titleChars, {}, true);
-            gsap.set(titleChars, { opacity: 0 });
+            const charWraps = slideTitle.querySelectorAll(".char-wrap");
+            gsap.set(charWraps, { opacity: 0 });
           }
         }
       });
@@ -256,6 +253,7 @@ export class GalleryController {
 
     const animateBackground = (start: number) => {
       // Animate background
+      const isRight = newIndex > this.activeIndex;
       const bgItems = this.container?.querySelectorAll(".background-item");
       if (bgItems) {
         const percent = 50;
@@ -294,27 +292,41 @@ export class GalleryController {
     tl.play();
   };
 
+  get canAnimate() {
+    return (
+      this.booted && !this.animating && this.activeIndex < this.data.length - 1
+    );
+  }
+
   start = () => {
-    if (this.activeIndex < this.data.length - 1) {
-      clearTimeout(this.timeoutId);
-      this.cursor.play();
-      this.timeoutId = setTimeout(() => {
-        this.nextSlide();
-      }, AUTO_PLAY_DURATION * 1000);
-    }
+    clearTimeout(this.timeoutId);
+    this.cursor.play();
+
+    this.timeoutId = setTimeout(() => {
+      this.nextSlide();
+    }, AUTO_PLAY_DURATION * 1000);
+  };
+
+  stop = () => {
+    clearTimeout(this.timeoutId);
+    this.cursor.timeline.pause(0);
   };
 
   nextSlide = () => {
-    if (this.booted && !this.animating) {
+    if (this.canAnimate) {
       this.goToSlide(this.activeIndex + 1);
-      // this.start();
+      this.start();
+    } else {
+      this.stop();
     }
   };
 
   prevSlide = () => {
-    if (this.booted && !this.animating) {
+    if (this.canAnimate) {
       this.goToSlide(this.activeIndex - 1);
-      // this.start();
+      this.start();
+    } else {
+      this.stop();
     }
   };
 }

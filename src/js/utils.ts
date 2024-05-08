@@ -52,13 +52,30 @@ export const getMeasures = ({
   };
 };
 
+export const wrapChars = (split: SplitText) => {
+  // We need an additional wrapper on the text to animate the content.
+  return split.chars.map((char) => {
+    if (char.textContent) {
+      const wrap = document.createElement("div");
+      wrap.append(char.textContent);
+      wrap.classList.add("char-wrap");
+      wrap.style.position = "relative";
+      wrap.style.display = "inline-block";
+      char.innerHTML = "";
+      char.append(wrap);
+      return wrap;
+    }
+  });
+};
+
 export const splitTitle = (node: Element) => {
-  return new SplitText(node, {
+  const split = new SplitText(node, {
     type: "words,chars,lines",
     linesClass: "line",
     wordsClass: "word",
     charsClass: "char",
-    lineThreshold: 0.8,
+    lineThreshold: 0.3,
     reduceWhiteSpace: true,
   });
+  wrapChars(split);
 };

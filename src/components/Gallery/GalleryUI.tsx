@@ -13,8 +13,8 @@ const Cursor = styled.div`
     left: 20px;
     position: absolute;
     content: "";
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
     display: block;
     background: white;
     border-radius: 100%;
@@ -29,7 +29,7 @@ const Cursor = styled.div`
     height: 44px;
     display: block;
     border-radius: 100%;
-    border: solid 2px rgba(255, 255, 255, 0.5);
+    border: solid 2px rgba(255, 255, 255, 0.1);
   }
 
   svg {
@@ -50,27 +50,6 @@ function GalleryUI() {
           <circle cx="22" cy="22" r="21" />
         </svg>
       </Cursor>
-
-      {/*<Grid className={"fixed left-0 top-0 z-10"}>
-        <div className="relative col-span-2 flex h-full overflow-hidden rounded-md bg-white/50 shadow-2xl backdrop-blur-3xl">
-          <button
-            id={"button-prev"}
-            className={
-              "w-full border-r border-white/30 p-5 font-bold hover:bg-black hover:text-white active:bg-black active:text-white"
-            }
-          >
-            Prev
-          </button>
-          <button
-            id={"button-next"}
-            className={
-              "w-full p-5 font-bold hover:bg-black hover:text-white active:bg-black active:text-white"
-            }
-          >
-            Next
-          </button>
-        </div>
-      </Grid>*/}
     </>
   );
 }
