@@ -12,6 +12,7 @@ class CursorController {
 
   timeline: GSAPTimeline;
   quickTos;
+  isShowing = false;
 
   constructor(animationDuration: number) {
     const container = document.querySelector<HTMLDivElement>("#ui-cursor");
@@ -51,6 +52,7 @@ class CursorController {
   }
 
   mouseMove = (e: MouseEvent) => {
+    if (!this.isShowing) this.mouseEnter();
     this.quickTos.x(e.clientX, e.clientX);
     this.quickTos.y(e.clientY, e.clientY);
   };
@@ -63,10 +65,12 @@ class CursorController {
   };
 
   mouseEnter = () => {
+    this.isShowing = true;
     this.quickTos.opacity(1);
   };
 
   mouseLeave = () => {
+    this.isShowing = false;
     this.quickTos.opacity(0);
   };
 
@@ -90,7 +94,6 @@ class CursorController {
   setup = () => {
     // @ts-expect-error: Types for this function are ambiguous.
     window.addEventListener("mousemove", this.mouseMove);
-
     document.addEventListener("mousedown", this.mouseDown);
     document.addEventListener("mouseup", this.mouseUp);
     document.addEventListener("mouseenter", this.mouseEnter);
