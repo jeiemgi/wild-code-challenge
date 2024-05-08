@@ -1,5 +1,5 @@
 import { gsap, Observer } from "@/js/gsap.ts";
-import { getMeasures, splitTitle } from "@/js/utils.ts";
+import { getColWidth, getMeasures, splitTitle } from "@/js/utils.ts";
 import {
   animateBackgroundIn,
   animateBackgroundOut,
@@ -54,7 +54,6 @@ export class GalleryController {
   }
 
   removeListeners = () => {
-    this.cursor.cleanup();
     this.data.forEach((_, index) => {
       this.DOM.hover![index].removeEventListener(
         "mouseenter",
@@ -69,8 +68,7 @@ export class GalleryController {
     });
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("resize", this.onResize);
-    this.DOM.next?.removeEventListener("click", this.nextSlide);
-    this.DOM.prev?.removeEventListener("click", this.prevSlide);
+    this.cursor.cleanup();
   };
 
   addListeners = () => {
@@ -102,8 +100,6 @@ export class GalleryController {
     });
     window.addEventListener("resize", this.onResize);
     window.addEventListener("resize", this.onResize);
-    this.DOM.next?.addEventListener("click", this.nextSlide);
-    this.DOM.prev?.addEventListener("click", this.prevSlide);
   };
 
   get hasNext() {
@@ -150,10 +146,14 @@ export class GalleryController {
 
   setup = () => {
     const setupWrapper = () => {
-      gsap.set(".slider-wrapper", {
-        width: (window.innerWidth / 3) * this.DOM.slides!.length,
-      });
+      if (this.DOM.wrapper) {
+        const unit = window.innerWidth / 3;
+        gsap.set(this.DOM.wrapper, {
+          width: unit * this.data.length,
+        });
+      }
     };
+
     const setupSlides = () => {
       // Images
       this.DOM.slides?.forEach((slide, index) => {
@@ -263,10 +263,15 @@ export class GalleryController {
 
     const animateWrap = (start: number) => {
       if (this.DOM.wrapper && this.DOM.slides) {
-        const slideWidth = this.DOM.slides[0].clientWidth;
+        const colWidth = getColWidth();
+        const slideW = colWidth * 3;
         tl.to(
           this.DOM.wrapper,
-          { x: -slideWidth * (newIndex - 1), ease: "expo.out", duration: 0.5 },
+          {
+            x: -(slideW * (newIndex - 1)),
+            ease: "expo.out",
+            duration: 0.5,
+          },
           start,
         );
       }
@@ -317,11 +322,11 @@ export class GalleryController {
       }
     };
 
+    this.handleActiveClassNames();
     animateCursor();
     animateWrap(0);
     animateSlides(0);
     animateBackgrounds(0);
-    this.handleActiveClassNames();
 
     tl.play();
   };
@@ -341,15 +346,6 @@ export class GalleryController {
   nextSlide = () => {
     if (this.canAnimate) {
       this.goToSlide(this.activeIndex + 1);
-      this.start();
-    } else {
-      this.stop();
-    }
-  };
-
-  prevSlide = () => {
-    if (this.canAnimate) {
-      this.goToSlide(this.activeIndex - 1);
       this.start();
     } else {
       this.stop();

@@ -1,5 +1,8 @@
 import { SplitText } from "@/js/gsap.ts";
 
+export const getColWidth = () => {
+  return window.innerWidth / 12;
+};
 export const getMeasures = ({
   index,
   activeIndex,
@@ -13,7 +16,7 @@ export const getMeasures = ({
   let posX = 0;
   let posY = 0;
   const margin = 16;
-  const colWidth = window.innerWidth / 12;
+  const colWidth = getColWidth();
   const isActive = index === activeIndex;
 
   const containerW = isActive ? colWidth * 6 : colWidth * 3;
