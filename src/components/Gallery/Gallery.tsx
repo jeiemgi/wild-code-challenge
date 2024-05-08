@@ -7,6 +7,7 @@ import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
 import GalleryController from "@/js/controllers/GalleryController.ts";
 import type { DataType } from "@/js/data.ts";
 import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
+import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
 
 const Wrapper = styled.main`
   width: 100vw;
@@ -29,7 +30,7 @@ function Gallery({ data }: Props) {
 
     return () => {
       ctx.revert();
-      controller?.cleanup();
+      controller?.removeListeners();
     };
   }, [data]);
 
@@ -38,6 +39,8 @@ function Gallery({ data }: Props) {
       <GalleryBackground data={data} />
       <GallerySlides data={data} />
       <GalleryTitles data={data} />
+      <GalleryTitles data={data} />
+      <GalleryPagination data={data} />
       <GalleryUI />
     </Wrapper>
   );

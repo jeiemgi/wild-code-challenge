@@ -59,13 +59,21 @@ class CursorController {
     this.quickTos.opacity(0);
   };
 
+  hoverIn = () => {
+    gsap.to(this.DOM.el, { scale: 0.5 });
+  };
+
+  hoverOut = () => {
+    gsap.to(this.DOM.el, { scale: 1 });
+  };
+
   play = () => {
-    this.timeline.restart();
+    this.timeline.pause(0);
     this.timeline.play(0);
   };
 
-  reverse = () => {
-    this.timeline.reverse();
+  stop = () => {
+    this.timeline.pause(0);
   };
 
   setup = () => {

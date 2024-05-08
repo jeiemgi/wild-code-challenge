@@ -1,5 +1,46 @@
 import { gsap } from "@/js/gsap";
 
+export const animateBackgroundIn = (
+  bgItem: Element,
+  tl: GSAPTimeline,
+  position: number,
+  direction: number,
+) => {
+  const percent = 50;
+
+  tl.fromTo(
+    bgItem,
+    {
+      opacity: 0,
+      xPercent: percent * direction,
+    },
+    {
+      opacity: 1,
+      xPercent: 0,
+      ease: "circ.out",
+    },
+    position,
+  );
+};
+
+export const animateBackgroundOut = (
+  bgItem: Element,
+  tl: GSAPTimeline,
+  position: number,
+  direction: number,
+) => {
+  const percent = 50;
+
+  tl.to(
+    bgItem,
+    {
+      opacity: 0,
+      xPercent: percent * direction,
+    },
+    position,
+  );
+};
+
 export const animateTextIn = (
   title: HTMLDivElement,
   tl: GSAPTimeline,
@@ -11,7 +52,6 @@ export const animateTextIn = (
   tl.set(
     allChars,
     {
-      rotateX: 0,
       transformOrigin: "bottom bottom",
     },
     0,
@@ -23,7 +63,7 @@ export const animateTextIn = (
   const fromVars: GSAPTweenVars = {
     opacity: 0,
     xPercent: 100 * direction,
-    rotate: 45 * direction,
+    rotate: 30 * direction,
   };
   const toVars: GSAPTweenVars = {
     opacity: 1,
@@ -53,7 +93,7 @@ export const animateTextOut = (title: HTMLDivElement, direction: number) => {
   const toVars: GSAPTweenVars = {
     opacity: 0,
     xPercent: 100 * -direction,
-    rotate: 45 * -direction,
+    rotate: 30 * -direction,
     duration: 0.5,
     ease: "circ.inOut",
     stagger: {

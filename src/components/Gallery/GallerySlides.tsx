@@ -60,12 +60,12 @@ function GallerySlides({ data }: { data: DataType }) {
               className={"slide-item"}
               key={`Gallery-Item-${index}`}
             >
-              <SlideItemImage className={"slide-img"}>
+              <SlideItemImage data-hover className={"slide-img"}>
                 <img
                   src={item.image}
                   alt={`Image template ${index}`}
                   className={
-                    "pointer-events-none absolute left-0 top-0 size-full object-cover"
+                    "pointer-events-all absolute left-0 top-0 size-full object-cover"
                   }
                 />
               </SlideItemImage>
