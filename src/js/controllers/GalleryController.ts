@@ -1,7 +1,7 @@
-import Cursor from "@/js/Cursor.ts";
 import { gsap, Observer } from "@/js/gsap.ts";
 import { getMeasures, splitTitle } from "@/js/utils.ts";
 import { animateTextIn, animateTextOut } from "@/js/animations.ts";
+import CursorController from "@/js/controllers/CursorController.ts";
 import type { DataType } from "@/js/data.ts";
 
 const AUTO_PLAY_DURATION = 5;
@@ -15,7 +15,7 @@ export class GalleryController {
   container;
   data: DataType;
   timeoutId: number = 0;
-  cursor: Cursor = new Cursor(AUTO_PLAY_DURATION);
+  cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
 
   constructor(containerSelector: string, data: DataType) {
     this.data = data;
@@ -120,21 +120,25 @@ export class GalleryController {
         });
         gsap.set(slide, { ...measures.slide });
         gsap.set(slideImg, { ...measures.image });
-
-        // Titles
-        const titles = slide.querySelectorAll("h1");
-        titles.forEach((title) => {
-          if (title) splitTitle(title);
-        });
       });
 
       // Backgrounds
       if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
     };
 
+    const setupTitles = () => {
+      this.DOM.titles?.forEach((title) => {
+        const h1s = title!.querySelectorAll("h1");
+        h1s.forEach((title) => {
+          if (title) splitTitle(title);
+        });
+      });
+    };
+
     this.handleActiveClassNames();
     setupWrapper();
     setupSlides();
+    setupTitles();
   };
 
   initialAnimation = () => {
@@ -176,7 +180,7 @@ export class GalleryController {
     const animateCopy = () => {
       if (this.DOM.titles) {
         const title = this.DOM.titles[activeIndex];
-        animateTextIn(title, tl, 0.8);
+        animateTextIn(title, tl, 0.5);
       }
     };
 
@@ -235,12 +239,11 @@ export class GalleryController {
         tl.to(slideImg, { ...measures.image, duration: 0.8 }, start);
         tl.to(slideImg, { ...measures.image, duration: 0.8 }, start);
 
-        const slideTitle =
-          slide.querySelector<HTMLDivElement>(".gallery-title");
+        const slideTitle = this.DOM.titles![index];
 
         if (slideTitle) {
           if (index === newIndex) {
-            animateTextIn(slideTitle, tl, start + 0.2, newIndex - prevIndex);
+            animateTextIn(slideTitle, tl, start, newIndex - prevIndex);
           } else if (index === prevIndex) {
             animateTextOut(slideTitle, newIndex - prevIndex);
           } else {
@@ -268,6 +271,7 @@ export class GalleryController {
               {
                 opacity: 1,
                 xPercent: 0,
+                ease: "circ.out",
               },
               start,
             );

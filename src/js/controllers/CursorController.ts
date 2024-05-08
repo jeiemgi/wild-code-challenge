@@ -1,7 +1,7 @@
 import { gsap } from "@/js/gsap.ts";
 import { MouseEvent } from "react";
 
-class Cursor {
+class CursorController {
   DOM: {
     el: HTMLDivElement | null;
     SVG: SVGElement | null;
@@ -83,4 +83,4 @@ class Cursor {
   };
 }
 
-export default Cursor;
+export default CursorController;

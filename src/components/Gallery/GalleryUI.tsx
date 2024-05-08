@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import { DataType } from "@/js/data.ts";
+import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
 
 const Cursor = styled.div`
   position: fixed;

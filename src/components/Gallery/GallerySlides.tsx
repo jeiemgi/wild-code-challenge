@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import GalleryTitle from "@/components/Gallery/GalleryTitle";
 import type { DataType } from "@/js/data.ts";
 
 const Slider = styled.div`
@@ -7,6 +6,7 @@ const Slider = styled.div`
   height: 100%;
   overflow: hidden;
   position: relative;
+  will-change: transform;
 `;
 
 const SliderWrapper = styled.div`
@@ -28,7 +28,6 @@ const SliderItem = styled.div`
   justify-content: end;
   pointer-events: none;
   user-select: none;
-  will-change: transform;
 
   &.slide--active,
   &.slide--next,
@@ -48,7 +47,6 @@ const SlideItemImage = styled.div`
   user-select: none;
   border: solid 1px black;
   will-change: transform;
-  aspect-ratio: 64/ 85;
 `;
 
 function GallerySlides({ data }: { data: DataType }) {
@@ -71,11 +69,6 @@ function GallerySlides({ data }: { data: DataType }) {
                   }
                 />
               </SlideItemImage>
-              <GalleryTitle
-                item={item}
-                data-title={item.title}
-                key={`GalleryTitle-${index}`}
-              />
             </SliderItem>
           );
         })}

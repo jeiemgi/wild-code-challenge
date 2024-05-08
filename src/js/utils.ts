@@ -74,7 +74,6 @@ export const splitTitle = (node: Element) => {
     linesClass: "line",
     wordsClass: "word",
     charsClass: "char",
-    lineThreshold: 0.3,
     reduceWhiteSpace: true,
   });
   wrapChars(split);

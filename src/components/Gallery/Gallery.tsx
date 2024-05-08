@@ -4,8 +4,9 @@ import styled from "styled-components";
 import GalleryUI from "@/components/Gallery/GalleryUI.tsx";
 import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
 import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
-import GalleryController from "@/js/GalleryController.ts";
+import GalleryController from "@/js/controllers/GalleryController.ts";
 import type { DataType } from "@/js/data.ts";
+import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
 
 const Wrapper = styled.main`
   width: 100vw;
@@ -36,6 +37,7 @@ function Gallery({ data }: Props) {
     <Wrapper id={"gallery-home"}>
       <GalleryBackground data={data} />
       <GallerySlides data={data} />
+      <GalleryTitles data={data} />
       <GalleryUI />
     </Wrapper>
   );
