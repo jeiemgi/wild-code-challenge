@@ -9,12 +9,10 @@ export const animateTextIn = (
   const wrapsFill = title.querySelectorAll(".fill > .line");
 
   const fromVars: GSAPTweenVars = {
-    opacity: 0,
-    yPercent: 100,
+    yPercent: 120,
   };
 
   const toVars: GSAPTweenVars = {
-    opacity: 1,
     yPercent: 0,
     duration: 0.8,
     stagger: {
@@ -26,12 +24,13 @@ export const animateTextIn = (
 
   wraps.forEach((wrap) => {
     const chars = wrap.querySelectorAll(".char");
-    console.log(chars);
+    tl.set(chars, { opacity: 1 }, 0);
     tl.fromTo(chars, fromVars, toVars, position);
   });
 
   wrapsFill.forEach((wrap) => {
     const chars = wrap.querySelectorAll(".char");
+    tl.set(chars, { opacity: 1 }, 0);
     tl.fromTo(chars, fromVars, toVars, position);
   });
 };

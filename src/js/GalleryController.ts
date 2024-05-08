@@ -248,7 +248,7 @@ export class GalleryController {
           } else {
             const titleChars = slideTitle.querySelectorAll(animateCharsClass);
             // gsap.killTweensOf(titleChars, {}, true);
-            gsap.set(titleChars, { opacity: 0, yPercent: 110 });
+            gsap.set(titleChars, { opacity: 0 });
           }
         }
       });

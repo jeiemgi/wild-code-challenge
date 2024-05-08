@@ -39,6 +39,10 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
     line-height: 0.8em;
   }
 
+  /**
+  Fixes of spacing were needed, 
+  the font has a weird behavior on the line-height.
+   */
   .char {
     opacity: 0;
     overflow: hidden;
@@ -71,14 +75,15 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
 const ClipPath = styled.span`
   top: 0;
   left: 0;
+  right: 0;
+  margin: 0 auto;
   position: absolute;
   width: 100%;
   height: 100%;
-  color: red;
   pointer-events: none;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path: inset(0% 16.7% 0 16.7%);
+  clip-path: inset(0% 31.5% 0 31.5%);
 `;
 
 function GalleryTitle({ item, ...props }: { item: DataType[0] }) {
