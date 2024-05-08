@@ -63,9 +63,13 @@ export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   }}
 `;
 
-export const LabelSpan = styled.span<{ $color?: string }>`
+export const LabelSpan = styled.span<{ $color?: string; $align?: string }>`
   color: ${(props) => props.$color};
+  text-align: ${(props) => props.$align || "left"};
   font-family: "Helvetica", sans-serif;
   font-size: 10px;
+  font-weight: 400;
   letter-spacing: 0.08em;
+  line-height: 1.7em;
+  display: inline-block;
 `;

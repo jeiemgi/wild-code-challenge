@@ -42,6 +42,7 @@ export class GalleryController {
         ".pagination__number",
       ),
       dots: [...container.querySelectorAll<HTMLDivElement>(".pagination__dot")],
+      credits: [...container.querySelectorAll<HTMLDivElement>(".credit")],
       hover: [...container.querySelectorAll("[data-hover='true']")],
       images: container.querySelectorAll<HTMLDivElement>(".slide-img"),
       titles: container.querySelectorAll<HTMLDivElement>(".gallery-title"),
@@ -227,6 +228,15 @@ export class GalleryController {
       if (this.DOM.titles) {
         const title = this.DOM.titles[activeIndex];
         animateTextIn(title, tl, 0.5);
+
+        gsap.to(".ui-initial", {
+          opacity: 1,
+          duration: 1,
+          delay: 1.2,
+        });
+
+        const credit = this.DOM.credits[activeIndex];
+        gsap.to(credit, { opacity: 1, duration: 1, delay: 1.2 });
       }
     };
 
@@ -289,8 +299,13 @@ export class GalleryController {
         tl.to(slide, { ...measures.slide, duration: 0.8 }, start);
         tl.to(slideImg, { ...measures.image, duration: 0.8 }, start);
 
-        const slideTitle = this.DOM.titles![index];
+        const credit = this.DOM.credits![newIndex];
+        const prevCredit = this.DOM.credits![prevIndex];
 
+        if (prevCredit) tl.to(prevCredit, { opacity: 0, duration: 1 }, 0);
+        if (credit) tl.to(credit, { opacity: 1, duration: 1 }, 0);
+
+        const slideTitle = this.DOM.titles![index];
         if (slideTitle) {
           if (index === newIndex) {
             animateTextIn(slideTitle, tl, start, direction);

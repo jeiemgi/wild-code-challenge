@@ -13,7 +13,7 @@ import bg5 from "@/assets/images/blur-05.png";
 const data = [
   {
     title: "Everyday Flowers",
-    subtitle: "Johanna Hobel for WILD",
+    subtitle: "Johanna Hobel for VOUGUE",
     date: "DEC 2019",
     image: image1,
     background: bg1,
@@ -27,21 +27,21 @@ const data = [
   },
   {
     title: "Smooth Memories",
-    subtitle: "Johanna Hobel for WILD",
+    subtitle: "Johanna Hobel for CHANEL",
     date: "DEC 2019",
     image: image3,
     background: bg3,
   },
   {
     title: "The Future Universe",
-    subtitle: "Johanna Hobel for WILD",
+    subtitle: "Johanna Hobel for ON",
     date: "DEC 2019",
     image: image4,
     background: bg4,
   },
   {
     title: "She Was Born Urban",
-    subtitle: "Johanna Hobel for WILD",
+    subtitle: "Johanna Hobel for SI",
     date: "DEC 2019",
     image: image5,
     background: bg5,

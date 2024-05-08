@@ -17,3 +17,7 @@ body {
   overscroll-behavior: none;
   cursor: none;
 }
+
+.ui-initial {
+  opacity: 0;
+}

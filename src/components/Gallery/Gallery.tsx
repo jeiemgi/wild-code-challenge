@@ -39,7 +39,6 @@ function Gallery({ data }: Props) {
       <GalleryBackground data={data} />
       <GallerySlides data={data} />
       <GalleryTitles data={data} />
-      <GalleryTitles data={data} />
       <GalleryPagination data={data} />
       <GalleryUI />
     </Wrapper>

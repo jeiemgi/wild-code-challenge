@@ -65,7 +65,7 @@ const PaginationDot = styled.button`
 
 const GalleryPagination = ({ data }: { data: DataType }) => {
   return (
-    <Pagination className={"pagination"}>
+    <Pagination className={"pagination ui-initial"}>
       <PaginationInner>
         <LabelSpan $color={"white"} className={"labels"}>
           <span className={"pagination__number"}>1</span> of{" "}

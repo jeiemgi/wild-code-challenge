@@ -1,5 +1,6 @@
 import styled from "styled-components";
-import { DataType } from "@/js/data.ts";
+import { useEffect, useRef } from "react";
+import { gsap, SplitText } from "@/js/gsap.ts";
 
 const Cursor = styled.div`
   position: fixed;
@@ -8,6 +9,7 @@ const Cursor = styled.div`
   top: -20px;
   left: -20px;
   pointer-events: none;
+  opacity: 0;
 
   &::after {
     top: 20px;
@@ -43,9 +45,62 @@ const Cursor = styled.div`
   }
 `;
 
+const Header = styled.div`
+  top: 0;
+  left: 0;
+  position: fixed;
+  width: 100%;
+  padding: 16px;
+
+  #logo {
+    font-family: "Tungsten", sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+`;
+
 function GalleryUI() {
+  const timelineRef = useRef<GSAPTimeline>(gsap.timeline({ paused: true }));
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const split = new SplitText("#logo", { type: "chars" });
+      timelineRef.current.from(
+        split.chars,
+        {
+          y: -100,
+          duration: 0.5,
+          stagger: {
+            from: "random",
+            amount: 0.3,
+          },
+          ease: "expo.out",
+        },
+        1,
+      );
+
+      timelineRef.current.play();
+    });
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
+
   return (
     <>
+      <Header>
+        <div className={"inline-block overflow-hidden"}>
+          <a href={"#"} id={"logo"} data-hover>
+            XYZ Photography
+          </a>
+        </div>
+      </Header>
+
       <Cursor id="ui-cursor">
         <svg height="46" width="46" strokeLinecap={"round"}>
           <circle cx="22" cy="22" r="21" />
