@@ -102,6 +102,8 @@ export class GalleryController {
           if (title) splitTitle(title);
         });
       });
+
+      // Backgrounds
       if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
     };
 
@@ -245,8 +247,8 @@ export class GalleryController {
             animateTextOut(slideTitle, tl, start);
           } else {
             const titleChars = slideTitle.querySelectorAll(animateCharsClass);
-            gsap.killTweensOf(titleChars, {}, true);
-            gsap.set(titleChars, { opacity: 0, yPercent: 101, rotate: 20 });
+            // gsap.killTweensOf(titleChars, {}, true);
+            gsap.set(titleChars, { opacity: 0, yPercent: 110 });
           }
         }
       });

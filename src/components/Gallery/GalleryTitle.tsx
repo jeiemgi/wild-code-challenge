@@ -1,6 +1,29 @@
 import { DataType } from "@/js/data.ts";
 import styled, { css } from "styled-components";
 
+const Overlay = styled.div`
+  top: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: -20vw;
+  min-width: 90vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+
+  &.gallery-title {
+    pointer-events: none;
+  }
+`;
+
+const Container = styled.div`
+  width: 100%;
+  position: relative;
+`;
+
 const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
   font-style: normal;
@@ -8,12 +31,21 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
-  display: inline !important;
+  position: relative;
+  line-height: 0.68em;
+
+  .word {
+    padding-top: 0.04em;
+    line-height: 0.8em;
+  }
 
   .char {
     opacity: 0;
     overflow: hidden;
     will-change: transform;
+    line-height: 0.68em;
+    padding-top: 0.09em;
+    margin-top: -0.045em;
   }
 
   .word,
@@ -30,58 +62,37 @@ const TitleH1 = styled.h1<{ $outline?: boolean }>`
       `;
     } else {
       return css`
-        color: #ffffff;
+        color: white;
       `;
     }
   }}
 `;
 
-const GalleryTitleDiv = styled.div`
-  top: 0;
-  left: 0;
-  position: absolute;
-  width: 50vw;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &.gallery-title {
-    pointer-events: none;
-  }
-
-  .word,
-  .line,
-  .char {
-    padding-top: 0.06rem;
-    line-height: 11.5rem;
-    height: 11rem;
-  }
-`;
-
-const TitleClip = styled.span`
+const ClipPath = styled.span`
   top: 0;
   left: 0;
   position: absolute;
   width: 100%;
   height: 100%;
-  color: white;
+  color: red;
   pointer-events: none;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path: inset(0% 4.4% 0 4.4%);
+  clip-path: inset(0% 16.7% 0 16.7%);
 `;
 
 function GalleryTitle({ item, ...props }: { item: DataType[0] }) {
   return (
-    <GalleryTitleDiv className={"gallery-title"} {...props}>
-      <div className="relative">
-        <TitleH1 $outline>{item.title}</TitleH1>
-        <TitleClip>
-          <TitleH1>{item.title}</TitleH1>
-        </TitleClip>
-      </div>
-    </GalleryTitleDiv>
+    <Overlay className={"gallery-title"} {...props}>
+      <Container className="relative">
+        <TitleH1 $outline className={"outline"}>
+          {item.title}
+        </TitleH1>
+        <ClipPath>
+          <TitleH1 className={"fill"}>{item.title}</TitleH1>
+        </ClipPath>
+      </Container>
+    </Overlay>
   );
 }
 

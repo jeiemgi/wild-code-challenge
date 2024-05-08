@@ -54,11 +54,11 @@ export const getMeasures = ({
 
 export const splitTitle = (node: Element) => {
   return new SplitText(node, {
-    type: "lines,words,chars",
+    type: "words,chars,lines",
     linesClass: "line",
     wordsClass: "word",
     charsClass: "char",
-    lineThreshold: 0.5,
-    reduceWhiteSpace: false,
+    lineThreshold: 0.8,
+    reduceWhiteSpace: true,
   });
 };
