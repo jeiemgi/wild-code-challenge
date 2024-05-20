@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect, useRef } from "react";
+import { PropsWithChildren, useEffect, useRef } from "react";
 import { gsap, SplitText } from "@/js/gsap.ts";
 
 const Cursor = styled.div`
@@ -45,7 +45,7 @@ const Cursor = styled.div`
   }
 `;
 
-const Header = styled.div`
+const Header = styled.header`
   top: 0;
   left: 0;
   position: fixed;
@@ -63,7 +63,7 @@ const Header = styled.div`
   }
 `;
 
-function GalleryUI() {
+function Layout({ children }: PropsWithChildren) {
   const timelineRef = useRef<GSAPTimeline>(gsap.timeline({ paused: true }));
 
   useEffect(() => {
@@ -82,7 +82,6 @@ function GalleryUI() {
         },
         1,
       );
-
       timelineRef.current.play();
     });
 
@@ -94,12 +93,18 @@ function GalleryUI() {
   return (
     <>
       <Header>
-        <div className={"inline-block overflow-hidden"}>
-          <a href={"#"} id={"logo"} data-hover>
-            XYZ Photography
-          </a>
-        </div>
+        <nav className={"inline-block overflow-hidden"}>
+          <ul>
+            <li>
+              <a href={"/"} id={"logo"} role={"button"} data-hover>
+                XYZ Photography
+              </a>
+            </li>
+          </ul>
+        </nav>
       </Header>
+
+      {children}
 
       <Cursor id="ui-cursor">
         <svg height="46" width="46" strokeLinecap={"round"}>
@@ -110,4 +115,4 @@ function GalleryUI() {
   );
 }
 
-export default GalleryUI;
+export default Layout;

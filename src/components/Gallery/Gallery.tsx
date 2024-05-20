@@ -1,50 +1,92 @@
 import { gsap } from "@/js/gsap";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import styled from "styled-components";
-import GalleryUI from "@/components/Gallery/GalleryUI.tsx";
-import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
-import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
+import {
+  BackgroundsContainer,
+  BackgroundItem,
+  CreditsItem,
+  TitleItem,
+  SlideItem,
+} from "@/components/Gallery/styles";
 import GalleryController from "@/js/controllers/GalleryController.ts";
-import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
-import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
-import type { DataType } from "@/js/data.ts";
+import type { GalleryData } from "@/js/data.ts";
 
-const Wrapper = styled.main`
-  width: 100vw;
-  height: 100vh;
-  background: black;
-  overflow: hidden;
-`;
-
-interface Props {
-  data: DataType;
+interface GalleryProps {
+  id: string;
+  data: GalleryData;
 }
 
-function Gallery({ data }: Props) {
+const MainWrapper = styled.main`
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+`;
+
+const SliderWrapper = styled.div`
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  white-space: nowrap;
+  will-change: transform;
+  border: solid 1px red;
+`;
+
+export const AbsoluteContainer = styled.div`
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  position: absolute;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+`;
+
+const Gallery = ({ id, data }: GalleryProps) => {
   useEffect(() => {
     let controller: GalleryController;
-
     const ctx = gsap.context(() => {
-      controller = new GalleryController("#gallery-home", data);
+      console.log(id);
+      controller = new GalleryController(id, data);
+      controller.setup();
+      // controller.addListeners();
+      //this.initialAnimation();
     });
 
     return () => {
       ctx.revert();
       controller?.removeListeners();
     };
-  }, [data]);
+  }, [id, data]);
 
   return (
-    <>
-      <Wrapper id={"gallery-home"}>
-        <GalleryBackground data={data} />
-        <GallerySlides data={data} />
-        <GalleryTitles data={data} />
-        <GalleryPagination data={data} />
-        <GalleryUI />
-      </Wrapper>
-    </>
+    <MainWrapper id={id} className={"gallery__container"}>
+      <SliderWrapper className={"gallery__scroller"}>
+        {data.map((item, index) => (
+          <SlideItem item={item} key={`SlideItem-${index}`} />
+        ))}
+      </SliderWrapper>
+
+      <BackgroundsContainer className={"gallery__backgrounds"}>
+        {data.map((item, index) => (
+          <BackgroundItem key={`BackgroundItem-${index}`} item={item} />
+        ))}
+      </BackgroundsContainer>
+
+      <AbsoluteContainer className={"gallery__titles"}>
+        {data.map((item, index) => (
+          <Fragment key={`Titles-${index}`}>
+            <TitleItem item={item} index={index} />
+            <CreditsItem item={item} key={`Credits-${index}`} />
+          </Fragment>
+        ))}
+      </AbsoluteContainer>
+
+      {/*<GalleryPagination data={data} />*/}
+    </MainWrapper>
   );
-}
+};
 
 export default Gallery;

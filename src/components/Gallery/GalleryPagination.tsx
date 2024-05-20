@@ -1,18 +1,18 @@
 import styled from "styled-components";
-import { DataType } from "@/js/data.ts";
+import { GalleryData } from "@/js/data.ts";
 import { LabelSpan } from "@/components/Text.tsx";
 
 const Pagination = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  position: fixed;
+  position: absolute;
   display: flex;
   align-items: end;
   justify-content: center;
   max-width: max-content;
   margin: 0 auto;
-  bottom: 30vh;
+  bottom: 20%;
 `;
 
 const PaginationInner = styled.div`
@@ -63,7 +63,7 @@ const PaginationDot = styled.button`
   }
 `;
 
-const GalleryPagination = ({ data }: { data: DataType }) => {
+const GalleryPagination = ({ data }: { data: GalleryData }) => {
   return (
     <Pagination className={"pagination ui-initial"}>
       <PaginationInner>

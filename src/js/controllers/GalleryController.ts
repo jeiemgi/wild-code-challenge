@@ -1,79 +1,109 @@
-import { gsap, Observer } from "@/js/gsap.ts";
-import { getColWidth, getMeasures, splitTitle } from "@/js/utils.ts";
+import { gsap, Observer, ScrollTrigger } from "@/js/gsap.ts";
+import {
+  getActiveMeasures,
+  getColWidth,
+  getMeasures,
+  querySelector,
+  querySelectorAll,
+  splitTitle,
+} from "@/js/utils.ts";
 import {
   animateBackgroundIn,
   animateBackgroundOut,
   animateTextIn,
   animateTextOut,
+  scrollBackgroundIn,
+  scrollBackgroundOut,
+  scrollTextIn,
+  scrollTextOut,
+  tweenImageIn,
+  tweenImageOut,
 } from "@/js/animations.ts";
 import CursorController from "@/js/controllers/CursorController.ts";
-import type { DataType } from "@/js/data.ts";
+import type { GalleryData } from "@/js/data.ts";
 
 const AUTO_PLAY_DURATION = 5;
-const ITEM_CLASS = ".slide-item";
 
 export class GalleryController {
-  DOM;
   activeIndex = 0;
   animating = false;
   booted = false;
-  container;
-  data: DataType;
-  timeoutId: number = 0;
   cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
+  data: GalleryData;
+  timeoutId: number = 0;
 
-  constructor(containerSelector: string, data: DataType) {
+  DOM: {
+    container: HTMLDivElement | null;
+    wrapper: HTMLDivElement | null;
+    backgrounds: NodeListOf<HTMLDivElement> | null;
+    credits: NodeListOf<HTMLDivElement> | null;
+    hovers: NodeListOf<HTMLDivElement> | null;
+    nextBtn: HTMLDivElement | null;
+    paginationDots: NodeListOf<HTMLDivElement> | null;
+    paginationNumber: HTMLDivElement | null;
+    prevBtn: HTMLDivElement | null;
+    slides: NodeListOf<HTMLDivElement> | null;
+    titles: NodeListOf<HTMLDivElement> | null;
+  };
+
+  constructor(containerSelector: string, data: GalleryData) {
     this.data = data;
-    const container = document.querySelector(containerSelector);
+    const el = document.querySelector<HTMLDivElement>(`#${containerSelector}`);
+    const wrapper = querySelector(el, ".gallery__scroller");
 
-    if (!container) {
-      this.DOM = {};
-      return;
-    }
+    if (!el) throw new Error("No container found");
+    if (!wrapper) throw new Error("No wrapper found");
 
-    this.container = container;
     this.DOM = {
-      next: container.querySelector("#button-next"),
-      prev: container.querySelector("#button-prev"),
-      backgrounds: container.querySelectorAll(".background-item"),
-      wrapper: container.querySelector<HTMLDivElement>(".slider-wrapper"),
-      slides: [...container!.querySelectorAll<HTMLDivElement>(ITEM_CLASS)],
-      pagination: container.querySelector<HTMLDivElement>(
-        ".pagination__number",
-      ),
-      dots: [...container.querySelectorAll<HTMLDivElement>(".pagination__dot")],
-      credits: [...container.querySelectorAll<HTMLDivElement>(".credit")],
-      hover: [...container.querySelectorAll("[data-hover='true']")],
-      images: container.querySelectorAll<HTMLDivElement>(".slide-img"),
-      titles: container.querySelectorAll<HTMLDivElement>(".gallery-title"),
-      charWraps: [[]],
+      container: el,
+      wrapper,
+      backgrounds: querySelectorAll(el, ".background-item"),
+      credits: querySelectorAll(el, ".credit"),
+      hovers: querySelectorAll(el, "[data-hover='true']"),
+      nextBtn: querySelector(el, "#button-next"),
+      paginationDots: querySelectorAll(el, ".pagination__dot"),
+      paginationNumber: querySelector(el, ".pagination__dot"),
+      prevBtn: querySelector(el, "#button-prev"),
+      slides: querySelectorAll(el, ".slide-item"),
+      titles: querySelectorAll(el, ".slide-titles__item"),
     };
-
-    this.setup();
-    this.addListeners();
-    this.initialAnimation();
   }
 
   removeListeners = () => {
     this.data.forEach((_, index) => {
-      this.DOM.hover![index].removeEventListener(
-        "mouseenter",
-        this.cursor.hoverIn,
-      );
-      this.DOM.hover![index].removeEventListener(
-        "mouseleave",
-        this.cursor.hoverOut,
-      );
-      this.DOM.dots![index].removeEventListener("click", this.onClick);
-      this.DOM.slides![index].removeEventListener("click", this.onClick);
+      if (this.DOM.hovers) {
+        this.DOM.hovers[index].removeEventListener(
+          "mouseenter",
+          this.cursor.hoverIn,
+        );
+        this.DOM.hovers[index].removeEventListener(
+          "mouseleave",
+          this.cursor.hoverOut,
+        );
+      }
+
+      if (
+        this.DOM.paginationDots &&
+        this.DOM.paginationDots[index] &&
+        this.DOM.slides &&
+        this.DOM.slides[index]
+      ) {
+        this.DOM.paginationDots[index].removeEventListener(
+          "click",
+          this.onClick,
+        );
+        this.DOM.slides[index].removeEventListener("click", this.onClick);
+      }
     });
+
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("resize", this.onResize);
+
     this.cursor.cleanup();
   };
 
   addListeners = () => {
-    Observer.create({
+    /*Observer.create({
       type: "wheel,touch",
       preventDefault: true,
       onUp: () => {
@@ -84,10 +114,10 @@ export class GalleryController {
         if (!this.animating && this.booted)
           this.goToSlide(this.activeIndex + 1);
       },
-    });
-    // Add click listener to slides
+    });*/
 
-    this.DOM.hover?.forEach((el) => {
+    // Add click listener to slides
+    this.DOM.hovers?.forEach((el) => {
       el.addEventListener("mouseenter", this.cursor.hoverIn);
       el.addEventListener("mouseleave", this.cursor.hoverOut);
     });
@@ -96,9 +126,10 @@ export class GalleryController {
       slide.addEventListener("click", this.onClick);
     });
 
-    this.DOM.dots?.forEach((dot) => {
+    this.DOM.paginationDots?.forEach((dot) => {
       dot.addEventListener("click", this.onClick);
     });
+
     window.addEventListener("resize", this.onResize);
     window.addEventListener("resize", this.onResize);
   };
@@ -115,16 +146,16 @@ export class GalleryController {
     const target = e.target ? (e.target as HTMLDivElement) : e.target;
     const index = Number(target?.dataset.index);
     if (index === 0 || (index && index !== this.activeIndex)) {
-      this.goToSlide(index);
+      // this.goToSlide(index);
       this.start();
     }
   };
 
   handleActiveClassNames = () => {
-    if (this.DOM.pagination)
-      this.DOM.pagination.innerText = `${this.activeIndex + 1}`;
+    if (this.DOM.paginationNumber)
+      this.DOM.paginationNumber.innerText = `${this.activeIndex + 1}`;
 
-    this.DOM.dots?.forEach((dot, index) => {
+    this.DOM.paginationDots?.forEach((dot, index) => {
       if (this.activeIndex === index) {
         dot.classList.add("pagination__dot--active");
       } else {
@@ -146,46 +177,82 @@ export class GalleryController {
   };
 
   setup = () => {
+    const colWidth = getColWidth();
+    const slideWidth = colWidth * 4;
+
     const setupWrapper = () => {
-      if (this.DOM.wrapper) {
-        const unit = window.innerWidth / 3;
+      if (this.DOM.wrapper)
         gsap.set(this.DOM.wrapper, {
-          width: unit * this.data.length,
+          xPercent: 30,
+          width: slideWidth * this.data.length - 1,
+        });
+    };
+
+    const setupSlide = (index: number) => {
+      const slideDiv = this.DOM.slides ? this.DOM.slides[index] : null;
+      const slideImg = slideDiv?.querySelector(".slide-img");
+
+      if (slideDiv && slideImg) {
+        const measures = getMeasures(index, this.activeIndex, slideDiv);
+        gsap.set(slideDiv, { ...measures.slide });
+        // gsap.set(slideImg, { ...measures.image });
+      }
+    };
+
+    const setupTitle = (index: number) => {
+      if (this.DOM.titles) {
+        const titleDiv = this.DOM.titles[index];
+        const h1s = querySelectorAll(titleDiv, "h1");
+        h1s?.forEach((title) => {
+          if (title) splitTitle(title);
         });
       }
     };
 
-    const setupSlides = () => {
-      // Images
-      this.DOM.slides?.forEach((slide, index) => {
-        const slideImg = slide.querySelector(".slide-img");
-        const measures = getMeasures({
-          index,
-          slide,
-          slideImg,
-          activeIndex: this.activeIndex,
-        });
-        gsap.set(slide, { ...measures.slide });
-        gsap.set(slideImg, { ...measures.image });
-      });
+    const scrollTrigger = () => {
+      if (this.DOM.wrapper && this.container) {
+        const maxScroll = -(
+          this.DOM.wrapper.clientWidth +
+          window.innerWidth / 2
+        );
+        // To have a scrollable div behind
+        // gsap.set(this.container, { height: wrapper.clientWidth });
 
-      // Backgrounds
-      if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
-    };
-
-    const setupTitles = () => {
-      this.DOM.titles?.forEach((title) => {
-        const h1s = title!.querySelectorAll("h1");
-        h1s.forEach((title) => {
-          if (title) splitTitle(title);
+        // Scroll animation
+        gsap.to(this.DOM.wrapper, {
+          xPercent: -100,
+          ease: "none",
+          scrollTrigger: {
+            end: "+=100%",
+            pin: true,
+            scrub: 2,
+            markers: true,
+            trigger: this.container,
+          },
         });
-      });
+
+        /*this.DOM.slides.forEach((slide, index) => {
+          this.tweenSlide(slide, index, scrollTween);
+        });*/
+      }
     };
 
     this.handleActiveClassNames();
+
+    const setupBackgrounds = () => {
+      if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
+    };
+
     setupWrapper();
-    setupSlides();
-    setupTitles();
+
+    this.data.forEach((_, index) => {
+      setupSlide(index);
+      // setupTitle(index);
+    });
+
+    // setupTitles();
+    // scrollTrigger();
+    //setupBackgrounds();
   };
 
   initialAnimation = () => {
@@ -199,7 +266,7 @@ export class GalleryController {
     });
 
     const animateScroll = () => {
-      if (this.DOM.wrapper) {
+      if (this.DOM.wrapper && this.DOM.slides) {
         const slideWidth = this.DOM.slides[0].clientWidth;
         tl.fromTo(
           this.DOM.wrapper,
@@ -235,7 +302,7 @@ export class GalleryController {
           delay: 1.2,
         });
 
-        const credit = this.DOM.credits[activeIndex];
+        const credit = querySelectorAll(this.container, "");
         gsap.to(credit, { opacity: 1, duration: 1, delay: 1.2 });
       }
     };
@@ -251,99 +318,34 @@ export class GalleryController {
     this.setup();
   };
 
-  goToSlide = (newIndex: number) => {
-    if (
-      newIndex < 0 ||
-      newIndex === this.activeIndex ||
-      newIndex > this.data.length - 1
-    )
-      return;
+  tweenSlide = (
+    slide: HTMLDivElement,
+    index: number,
+    containerAnimation: GSAPTween,
+  ) => {
+    const animateSlide = () => {
+      const slideTitle = this.DOM.titles![index];
+      tweenImageIn(slide, containerAnimation);
+      tweenImageOut(slide, containerAnimation);
+      scrollTextIn(slideTitle, slide, containerAnimation);
+      scrollTextOut(slideTitle, slide, containerAnimation);
 
-    this.animating = true;
-    const prevIndex = this.activeIndex;
-    this.activeIndex = newIndex;
+      // OUT
+      // tl.to(credit, { opacity: 0, duration: 1 }, 0);
 
-    const direction = newIndex - prevIndex;
-    const tl = gsap.timeline({
-      paused: true,
-      onComplete: () => {
-        this.animating = false;
-      },
-    });
-
-    const animateWrap = (start: number) => {
-      if (this.DOM.wrapper && this.DOM.slides) {
-        const colWidth = getColWidth();
-        const slideW = colWidth * 3;
-        tl.to(
-          this.DOM.wrapper,
-          {
-            x: -(slideW * (newIndex - 1)),
-            ease: "expo.out",
-            duration: 0.5,
-          },
-          start,
-        );
-      }
+      // OUT
+      //const charWraps = slideTitle.querySelectorAll(".char-wrap");
+      // gsap.set(charWraps, { opacity: 0 });
     };
 
-    const animateSlides = (start: number) => {
-      this.DOM.slides?.forEach((slide, index) => {
-        const slideImg = slide.querySelector(".slide-img");
-        const measures = getMeasures({
-          index,
-          slide,
-          slideImg,
-          activeIndex: newIndex,
-        });
-        tl.to(slide, { ...measures.slide, duration: 0.8 }, start);
-        tl.to(slideImg, { ...measures.image, duration: 0.8 }, start);
-
-        const credit = this.DOM.credits![newIndex];
-        const prevCredit = this.DOM.credits![prevIndex];
-
-        if (prevCredit) tl.to(prevCredit, { opacity: 0, duration: 1 }, 0);
-        if (credit) tl.to(credit, { opacity: 1, duration: 1 }, 0);
-
-        const slideTitle = this.DOM.titles![index];
-        if (slideTitle) {
-          if (index === newIndex) {
-            animateTextIn(slideTitle, tl, start, direction);
-          } else if (index === prevIndex) {
-            animateTextOut(slideTitle, direction);
-          } else {
-            const charWraps = slideTitle.querySelectorAll(".char-wrap");
-            gsap.set(charWraps, { opacity: 0 });
-          }
-        }
-      });
+    const animateBackground = () => {
+      const bg = this.DOM.backgrounds![index];
+      scrollBackgroundIn(bg, slide);
+      scrollBackgroundOut(bg, slide);
     };
 
-    const animateBackgrounds = (start: number) => {
-      this.DOM.backgrounds?.forEach((item, index) => {
-        if (index === newIndex) {
-          animateBackgroundIn(item, tl, start, direction);
-        } else {
-          animateBackgroundOut(item, tl, start, direction);
-        }
-      });
-    };
-
-    const animateCursor = () => {
-      if (this.hasNext) {
-        this.cursor.play();
-      } else {
-        this.cursor.stop();
-      }
-    };
-
-    this.handleActiveClassNames();
-    animateCursor();
-    animateWrap(0);
-    animateSlides(0);
-    animateBackgrounds(0);
-
-    tl.play();
+    animateSlide();
+    animateBackground();
   };
 
   start = () => {
