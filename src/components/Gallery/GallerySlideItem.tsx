@@ -10,7 +10,7 @@ const SlideItemStyle = styled.div`
   user-select: none;
   pointer-events: none;
   border: dashed 1px mediumpurple;
-  background-color: purple;
+  will-change: transform;
 
   &.slide--active,
   &.slide--next,
@@ -39,6 +39,7 @@ const SlideItemImg = styled.img`
   position: absolute;
   object-fit: cover;
   pointer-events: none;
+  will-change: transform;
 `;
 
 export const SlideItem = ({

@@ -3,6 +3,34 @@ import { SplitText } from "@/js/gsap.ts";
 export const clamp = (num: number, min: number, max: number) =>
   Math.min(Math.max(num, min), max);
 
+/**
+ * https://gist.github.com/ca0v/73a31f57b397606c9813472f7493a940?permalink_comment_id=4941878#gistcomment-4941878
+ * @param callback
+ * @param delay
+ */
+export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
+  callback: T,
+  delay: number,
+) {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    const p = new Promise<ReturnType<T> | Error>((resolve, reject) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          const output = callback(...args);
+          resolve(output);
+        } catch (err) {
+          if (err instanceof Error) {
+            reject(err);
+          }
+          reject(new Error(`An error has occurred:${err}`));
+        }
+      }, delay);
+    });
+    return p;
+  };
+}
 export const getImageMeasures = (
   {
     width,
