@@ -3,7 +3,7 @@ import styled, { css } from "styled-components";
 export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
   font-style: normal;
-  font-size: 13.75em;
+  font-size: 7em;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   text-align: center;
@@ -12,6 +12,14 @@ export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   user-select: none;
   max-width: 1200px;
   margin: 0 auto;
+
+  @media screen and (min-width: 900px) {
+    font-size: 10em;
+  }
+
+  @media screen and (min-width: 1200px) {
+    font-size: 13.75em;
+  }
 
   .word {
     padding-top: 0.04em;

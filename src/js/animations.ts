@@ -7,6 +7,50 @@ const getChars = (title: HTMLDivElement) => {
   ];
 };
 
+export const enterLeaveInterpolation = ({
+  target,
+  trigger,
+  enterVars,
+  enterTriggers,
+  containerAnimation,
+  leaveVars,
+  leaveTriggers,
+  onUpdate,
+}: {
+  target: GSAPTweenTarget;
+  trigger: Element;
+  enterVars: GSAPTweenVars[];
+  leaveVars: GSAPTweenVars[];
+  enterTriggers: Array<string>;
+  leaveTriggers: Array<string>;
+  containerAnimation: GSAPAnimation;
+  onUpdate?: (self: ScrollTrigger) => void;
+}) => {
+  const enter = gsap.utils.interpolate(enterVars);
+  ScrollTrigger.create({
+    trigger,
+    start: enterTriggers[0],
+    end: enterTriggers[1],
+    containerAnimation,
+    onUpdate: (self) => {
+      gsap.set(target, { ...enter(self.progress) });
+      if (onUpdate) onUpdate(self);
+    },
+  });
+
+  const leave = gsap.utils.interpolate(leaveVars);
+  ScrollTrigger.create({
+    trigger,
+    start: leaveTriggers[0],
+    end: leaveTriggers[1],
+    containerAnimation,
+    onUpdate: (self) => {
+      gsap.set(target, { ...leave(self.progress) });
+      if (onUpdate) onUpdate(self);
+    },
+  });
+};
+
 export const scrollIn: GSAPTweenVars["scrollTrigger"] = {
   start: "left center",
   end: "center center",

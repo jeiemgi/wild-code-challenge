@@ -8,12 +8,7 @@ import {
 } from "@/js/utils.ts";
 import CursorController from "@/js/controllers/CursorController.ts";
 import type { GalleryData } from "@/js/data.ts";
-import {
-  animateTextIn,
-  scrollTriggerInterpolation,
-  triggerEnd,
-  triggerStart,
-} from "@/js/animations.ts";
+import { enterLeaveInterpolation } from "@/js/animations.ts";
 
 const AUTO_PLAY_DURATION = 5;
 
@@ -298,29 +293,31 @@ export class GalleryController {
         },
       });
 
-      const imagesInterpolation = () => {
-        const leaveTriggers = {
-          start: "50% center",
-          end: "149.9% center",
-        };
-        const enterTriggers = {
-          start: "-50% center",
-          end: "49.9% center",
-        };
+      scrollTimeline.to(this.DOM.slides, {
+        xPercent: -100 * count,
+        duration,
+        ease: "none",
+      });
 
+      const imagesInterpolation = () => {
         const slideMeasures = {
           x: this.measures.slide.x || 0,
           y: this.measures.slide.y || 0,
           width: this.measures.slide.width || 0,
           height: this.measures.slide.height || 0,
         };
+
         const prevMeasures = getImageMeasures(slideMeasures, -1);
         const activeMeasures = getImageMeasures(slideMeasures, 0);
         const nextMeasures = getImageMeasures(slideMeasures, 1);
 
+        const leaveTriggers = ["50% center", "149.9% center"];
+        const enterTriggers = ["-50% center", "49.9% center"];
+        const leaveVars = [activeMeasures, prevMeasures];
+        const enterVars = [nextMeasures, activeMeasures];
+
         this.DOM.slides?.forEach((slide, index) => {
           scrollTimeline.add("label" + index, index * (duration / count));
-
           if (
             this.DOM.images &&
             this.DOM.images[index] &&
@@ -328,86 +325,42 @@ export class GalleryController {
             this.measures.slide.height
           ) {
             const image = this.DOM.images[index];
-
-            const leave = gsap.utils.interpolate([
-              activeMeasures,
-              prevMeasures,
-            ]);
-            ScrollTrigger.create({
+            enterLeaveInterpolation({
+              target: image,
               trigger: slide,
-              ...leaveTriggers,
+              enterTriggers,
+              leaveTriggers,
+              enterVars,
+              leaveVars,
               containerAnimation: scrollTimeline,
-              onUpdate: (self) => {
-                gsap.set(image, { ...leave(self.progress) });
-              },
-            });
-
-            const enter = gsap.utils.interpolate([
-              nextMeasures,
-              activeMeasures,
-            ]);
-            ScrollTrigger.create({
-              trigger: slide,
-              ...enterTriggers,
-              containerAnimation: scrollTimeline,
-              onUpdate: (self) => {
-                gsap.set(image, { ...enter(self.progress) });
-              },
             });
           }
-        });
-
-        scrollTimeline.to(this.DOM.slides, {
-          xPercent: -100 * count,
-          duration,
-          ease: "none",
         });
       };
 
       const titlesInterpolation = () => {
-        const leaveTriggers = {
-          start: "50% center",
-          end: "right center",
-        };
-        const enterTriggers = {
-          start: "left center",
-          end: "center center",
-        };
+        const leaveTriggers = ["50% center", "right center"];
+        const enterTriggers = ["left center", "center center"];
+        const enterVars = [{ xPercent: 100 }, { xPercent: 0 }];
+        const leaveVars = [{ xPercent: 0 }, { xPercent: -100 }];
 
         this.DOM.titles?.forEach((title, index) => {
           if (this.DOM.titles && this.DOM.slides && this.DOM.slides[index]) {
             const charWraps = title.querySelectorAll(".char-wrap");
-
-            const enter = gsap.utils.interpolate([
-              { xPercent: 100 },
-              { xPercent: 0 },
-            ]);
-            ScrollTrigger.create({
-              markers: true,
+            enterLeaveInterpolation({
+              target: charWraps,
               trigger: this.DOM.slides[index],
-              ...enterTriggers,
+              enterTriggers,
+              leaveTriggers,
+              enterVars,
+              leaveVars,
               containerAnimation: scrollTimeline,
-              onUpdate: (self) => {
-                gsap.set(charWraps, { ...enter(self.progress) });
-              },
-            });
-
-            const leave = gsap.utils.interpolate([
-              { xPercent: 0 },
-              { xPercent: -100 },
-            ]);
-            ScrollTrigger.create({
-              trigger: this.DOM.slides[index],
-              ...leaveTriggers,
-              containerAnimation: scrollTimeline,
-              onUpdate: (self) => {
-                gsap.set(charWraps, { ...leave(self.progress) });
-              },
             });
           }
         });
       };
 
+      const backgroundInterpolation = () => {};
       imagesInterpolation();
       titlesInterpolation();
     };

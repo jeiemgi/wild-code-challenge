@@ -1,4 +1,4 @@
-import { gsap, SplitText } from "@/js/gsap.ts";
+import { SplitText } from "@/js/gsap.ts";
 
 export const clamp = (num: number, min: number, max: number) =>
   Math.min(Math.max(num, min), max);

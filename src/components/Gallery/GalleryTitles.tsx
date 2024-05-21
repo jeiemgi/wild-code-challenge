@@ -30,7 +30,7 @@ const FillClip = styled.span`
   pointer-events: none;
   background-clip: text;
   -webkit-background-clip: text;
-  clip-path: inset(0% 32.8% 0 33.9%);
+  clip-path: inset(0% 11.1% 0 11.1%);
 `;
 
 export const TitleItem = ({
