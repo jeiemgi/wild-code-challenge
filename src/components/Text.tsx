@@ -3,8 +3,7 @@ import styled, { css } from "styled-components";
 export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   font-family: "Tungsten", serif;
   font-style: normal;
-  // font-size: 13.75em;
-  font-size: 220px;
+  font-size: 13.75em;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   text-align: center;

@@ -1,8 +1,8 @@
 import { gsap, Observer, ScrollTrigger } from "@/js/gsap.ts";
 import {
+  clamp,
   getActiveMeasures,
-  getColWidth,
-  getMeasures,
+  getImageMeasures,
   querySelector,
   querySelectorAll,
   splitTitle,
@@ -24,6 +24,39 @@ import type { GalleryData } from "@/js/data.ts";
 
 const AUTO_PLAY_DURATION = 5;
 
+interface GalleryConfig {
+  centered: boolean;
+  itemsInView: number;
+  breakpoints?: { [key: string]: Partial<Omit<GalleryConfig, "breakpoints">> };
+}
+
+const defaultConfig: GalleryConfig = {
+  centered: true,
+  itemsInView: 3,
+
+  breakpoints: {
+    "(max-width: 400px)": {
+      itemsInView: 1,
+    },
+  },
+};
+
+const defaultMeasures = {
+  centerLeft: 0,
+  wrapper: {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  },
+  slide: {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  },
+};
+
 export class GalleryController {
   activeIndex = 0;
   animating = false;
@@ -31,6 +64,20 @@ export class GalleryController {
   cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
   data: GalleryData;
   timeoutId: number = 0;
+
+  config = defaultConfig;
+
+  measures = defaultMeasures;
+
+  animatableProps = {
+    wrapper: {
+      x: {
+        previous: 0,
+        current: 0,
+        next: 0,
+      },
+    },
+  };
 
   DOM: {
     container: HTMLDivElement | null;
@@ -43,6 +90,7 @@ export class GalleryController {
     paginationNumber: HTMLDivElement | null;
     prevBtn: HTMLDivElement | null;
     slides: NodeListOf<HTMLDivElement> | null;
+    images: NodeListOf<HTMLDivElement> | null;
     titles: NodeListOf<HTMLDivElement> | null;
   };
 
@@ -65,22 +113,53 @@ export class GalleryController {
       paginationNumber: querySelector(el, ".pagination__dot"),
       prevBtn: querySelector(el, "#button-prev"),
       slides: querySelectorAll(el, ".slide-item"),
+      images: querySelectorAll(el, ".slide-img"),
       titles: querySelectorAll(el, ".slide-titles__item"),
     };
   }
 
+  setMeasures = () => {
+    if (this.DOM.container) {
+      const { itemsInView, centered } = this.config;
+      const slideW = window.innerWidth / itemsInView;
+      const slideH = this.DOM.container?.clientHeight;
+      const wrapperW = slideW * this.data.length;
+      const wrapperH = this.DOM.container?.clientHeight;
+
+      const border = this.data.length * 2;
+      const centerLeft = window.innerWidth / 2 - slideW / 2;
+
+      let activeSlideX = this.activeIndex * slideW;
+      if (centered) activeSlideX += centerLeft;
+
+      this.measures = {
+        centerLeft,
+        wrapper: {
+          y: 0,
+          x: 0,
+          height: wrapperH,
+          width: wrapperW + border,
+          paddingLeft: activeSlideX,
+        },
+        slide: {
+          x: 0,
+          y: 0,
+          width: slideW,
+          height: slideH,
+        },
+      };
+
+      gsap.set(this.DOM.wrapper, this.measures.wrapper);
+      gsap.set(this.DOM.slides, { ...this.measures.slide });
+    }
+  };
+
   removeListeners = () => {
     this.data.forEach((_, index) => {
-      if (this.DOM.hovers) {
-        this.DOM.hovers[index].removeEventListener(
-          "mouseenter",
-          this.cursor.hoverIn,
-        );
-        this.DOM.hovers[index].removeEventListener(
-          "mouseleave",
-          this.cursor.hoverOut,
-        );
-      }
+      this.DOM.hovers?.forEach((el) => {
+        el.removeEventListener("mouseenter", this.cursor.hoverIn);
+        el.removeEventListener("mouseleave", this.cursor.hoverOut);
+      });
 
       if (
         this.DOM.paginationDots &&
@@ -103,19 +182,6 @@ export class GalleryController {
   };
 
   addListeners = () => {
-    /*Observer.create({
-      type: "wheel,touch",
-      preventDefault: true,
-      onUp: () => {
-        if (!this.animating && this.booted)
-          this.goToSlide(this.activeIndex - 1);
-      },
-      onDown: () => {
-        if (!this.animating && this.booted)
-          this.goToSlide(this.activeIndex + 1);
-      },
-    });*/
-
     // Add click listener to slides
     this.DOM.hovers?.forEach((el) => {
       el.addEventListener("mouseenter", this.cursor.hoverIn);
@@ -177,82 +243,107 @@ export class GalleryController {
   };
 
   setup = () => {
-    const colWidth = getColWidth();
-    const slideWidth = colWidth * 4;
-
-    const setupWrapper = () => {
-      if (this.DOM.wrapper)
-        gsap.set(this.DOM.wrapper, {
-          xPercent: 30,
-          width: slideWidth * this.data.length - 1,
-        });
-    };
-
-    const setupSlide = (index: number) => {
-      const slideDiv = this.DOM.slides ? this.DOM.slides[index] : null;
-      const slideImg = slideDiv?.querySelector(".slide-img");
-
-      if (slideDiv && slideImg) {
-        const measures = getMeasures(index, this.activeIndex, slideDiv);
-        gsap.set(slideDiv, { ...measures.slide });
-        // gsap.set(slideImg, { ...measures.image });
-      }
-    };
-
-    const setupTitle = (index: number) => {
-      if (this.DOM.titles) {
-        const titleDiv = this.DOM.titles[index];
+    const setupTitles = () => {
+      this.DOM.titles?.forEach((titleDiv) => {
         const h1s = querySelectorAll(titleDiv, "h1");
         h1s?.forEach((title) => {
           if (title) splitTitle(title);
         });
-      }
+      });
     };
 
-    const scrollTrigger = () => {
-      if (this.DOM.wrapper && this.container) {
-        const maxScroll = -(
-          this.DOM.wrapper.clientWidth +
-          window.innerWidth / 2
+    const setupImages = () => {
+      this.DOM.images?.forEach((img, index) => {
+        const measures = getImageMeasures(
+          this.measures.slide,
+          index - this.activeIndex,
         );
-        // To have a scrollable div behind
-        // gsap.set(this.container, { height: wrapper.clientWidth });
+        gsap.set(img, { ...measures });
+      });
+    };
 
-        // Scroll animation
-        gsap.to(this.DOM.wrapper, {
-          xPercent: -100,
-          ease: "none",
-          scrollTrigger: {
-            end: "+=100%",
-            pin: true,
-            scrub: 2,
-            markers: true,
-            trigger: this.container,
+    const setupScroll = () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          scrub: 1,
+          snap: {
+            duration: 0.05,
+            ease: "power2.out",
+            snapTo: "labelsDirectional",
           },
-        });
+          pin: true,
+          trigger: this.DOM.container,
+          end: () => `+=${this.data.length * 100}%`,
+        },
+      });
 
-        /*this.DOM.slides.forEach((slide, index) => {
-          this.tweenSlide(slide, index, scrollTween);
-        });*/
-      }
+      const duration = 1;
+      const count = this.data.length - 1;
+
+      const quickSetters = [];
+      this.DOM.slides?.forEach((slide, index) => {
+        tl.add("label" + index, index * (duration / count));
+
+        if (this.DOM.images && this.DOM.images[index]) {
+          const nextMeasures = getImageMeasures(slide, 1);
+          const activeMeasures = getImageMeasures(slide, 0);
+          const prevMeasures = getImageMeasures(slide, -1);
+          const image = this.DOM.images[index];
+          const interpolate = gsap.utils.interpolate([
+            nextMeasures,
+            activeMeasures,
+            prevMeasures,
+          ]);
+
+          const setter = {
+            x: gsap.quickSetter(image, "x"),
+            y: gsap.quickSetter(image, "x"),
+            width: gsap.quickSetter(image, "x"),
+            height: gsap.quickSetter(image, "x"),
+          };
+
+          ScrollTrigger.create({
+            markers: true,
+            trigger: slide,
+            start: "left center",
+            end: "right center",
+            containerAnimation: tl,
+            onUpdate: (self) => {
+              gsap.set(image, interpolate(self.progress));
+            },
+          });
+        }
+      });
+
+      tl.to(this.DOM.slides, {
+        xPercent: -100 * count,
+        duration,
+        ease: "none",
+      });
     };
 
     this.handleActiveClassNames();
-
-    const setupBackgrounds = () => {
-      if (this.DOM.backgrounds) gsap.set(this.DOM.backgrounds, { scale: 2.5 });
-    };
-
-    setupWrapper();
-
-    this.data.forEach((_, index) => {
-      setupSlide(index);
-      // setupTitle(index);
-    });
-
-    // setupTitles();
-    // scrollTrigger();
+    this.setMeasures();
+    setupTitles();
+    setupImages();
+    setupScroll();
     //setupBackgrounds();
+  };
+
+  onResize = () => {
+    this.setup();
+  };
+
+  start = () => {
+    clearTimeout(this.timeoutId);
+    this.timeoutId = setTimeout(() => {
+      this.nextSlide();
+    }, AUTO_PLAY_DURATION * 1000);
+  };
+
+  stop = () => {
+    clearTimeout(this.timeoutId);
+    this.cursor.timeline.pause(0);
   };
 
   initialAnimation = () => {
@@ -312,52 +403,6 @@ export class GalleryController {
     animateCopy();
 
     tl.play();
-  };
-
-  onResize = () => {
-    this.setup();
-  };
-
-  tweenSlide = (
-    slide: HTMLDivElement,
-    index: number,
-    containerAnimation: GSAPTween,
-  ) => {
-    const animateSlide = () => {
-      const slideTitle = this.DOM.titles![index];
-      tweenImageIn(slide, containerAnimation);
-      tweenImageOut(slide, containerAnimation);
-      scrollTextIn(slideTitle, slide, containerAnimation);
-      scrollTextOut(slideTitle, slide, containerAnimation);
-
-      // OUT
-      // tl.to(credit, { opacity: 0, duration: 1 }, 0);
-
-      // OUT
-      //const charWraps = slideTitle.querySelectorAll(".char-wrap");
-      // gsap.set(charWraps, { opacity: 0 });
-    };
-
-    const animateBackground = () => {
-      const bg = this.DOM.backgrounds![index];
-      scrollBackgroundIn(bg, slide);
-      scrollBackgroundOut(bg, slide);
-    };
-
-    animateSlide();
-    animateBackground();
-  };
-
-  start = () => {
-    clearTimeout(this.timeoutId);
-    this.timeoutId = setTimeout(() => {
-      this.nextSlide();
-    }, AUTO_PLAY_DURATION * 1000);
-  };
-
-  stop = () => {
-    clearTimeout(this.timeoutId);
-    this.cursor.timeline.pause(0);
   };
 
   nextSlide = () => {

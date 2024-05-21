@@ -1,67 +1,42 @@
 import { SplitText } from "@/js/gsap.ts";
 
-export const getColWidth = () => {
-  return window.innerWidth / 12;
-};
-export const getMeasures = (
-  index: number,
-  activeIndex: number,
-  slide: HTMLDivElement,
+export const clamp = (num: number, min: number, max: number) =>
+  Math.min(Math.max(num, min), max);
+
+export const getImageMeasures = (
+  target:
+    | {
+        width: number;
+        height: number;
+      }
+    | HTMLDivElement,
+  position = -1,
 ) => {
-  let posX: number;
-  let posY: number;
-  const margin = 16;
-  const colWidth = getColWidth();
-  const isActive = index === activeIndex;
+  let posX = 0;
+  let posY = 0;
 
-  const containerW = colWidth * 6;
-  const containerH = slide.clientHeight;
+  const width =
+    target instanceof HTMLDivElement ? target.clientWidth : target.width;
+  const height =
+    target instanceof HTMLDivElement ? target.clientHeight : target.height;
 
-  const imageW = isActive ? colWidth * 4 : colWidth * 2;
-  const imageH = isActive ? containerH * 0.75 : containerH * 0.36;
+  const imageW = position === 0 ? width : width / 2;
+  const imageH = position === 0 ? height * 0.75 : height * 0.36;
 
-  if (index === activeIndex) {
+  if (position === 0) {
     posX = 0;
-    posY = (containerH - imageH) / 2;
-  } else if (index === activeIndex - 1) {
-    posX = -(containerW - imageW);
-    posY = containerH - imageH;
-  } else if (index > activeIndex) {
-    posY = 0;
-    posX = -margin;
+    posY = (height - imageH) / 2;
+  } else if (position > 0) {
+    posX = imageW;
   } else {
-    posY = containerH;
-    posX = -containerW;
+    posY = height - imageH;
   }
 
   return {
-    slide: {
-      width: containerW,
-    },
-    image: {
-      x: posX,
-      y: posY,
-      width: isActive ? colWidth * 4 : colWidth * 2,
-      height: imageH,
-    },
-  };
-};
-
-export const getActiveMeasures = (slide: HTMLDivElement) => {
-  const colWidth = getColWidth();
-  const containerH = slide.clientHeight;
-  const imageH = containerH * 0.75;
-  const slideW = colWidth * 4;
-  const slideH = slide.clientHeight;
-  const posX = 0;
-  const posY = (containerH - imageH) / 2;
-  return {
-    image: {
-      x: posX,
-      y: posY,
-      width: slideW,
-      height: slideH,
-    },
+    x: posX,
+    y: posY,
+    width: imageW,
+    height: imageH,
   };
 };
 

@@ -1,5 +1,9 @@
 import { gsap } from "@/js/gsap";
-import { getActiveMeasures, getHiddenMeasures } from "@/js/utils.ts";
+import {
+  getActiveMeasures,
+  getHiddenMeasures,
+  getImageMeasures,
+} from "@/js/utils.ts";
 
 const getChars = (title: HTMLDivElement) => {
   return [
@@ -9,16 +13,23 @@ const getChars = (title: HTMLDivElement) => {
 };
 
 export const scrollIn: GSAPTweenVars["scrollTrigger"] = {
-  scrub: 1,
+  // markers: {
+  //   startColor: "green",
+  //   endColor: "red",
+  // },
   start: "left center",
-  end: "center 49.9%",
+  end: "center center",
 };
 
 export const scrollOut: GSAPTweenVars["scrollTrigger"] = {
-  scrub: 1,
-  start: "70% center",
+  markers: {
+    fontWeight: "bold",
+    startColor: "yellow",
+    endColor: "yellow",
+  },
+  scrub: true,
+  start: "center center",
   end: "right center",
-  markers: true,
 };
 
 export const tweenImageIn = (
@@ -26,9 +37,9 @@ export const tweenImageIn = (
   containerAnimation: GSAPTween,
 ) => {
   const slideImg = trigger.querySelector(".slide-img");
-  const measures = getActiveMeasures(trigger);
+  const measures = getImageMeasures(trigger, 0);
   gsap.to(slideImg, {
-    ...measures.image,
+    ...measures,
     duration: 0.8,
     scrollTrigger: {
       trigger,
@@ -38,15 +49,21 @@ export const tweenImageIn = (
   });
 };
 
+const interpolateProgress = (slide: HTMLDivElement, progress: number) => {
+  const slideImg = trigger.querySelector(".slide-img");
+};
+
 export const tweenImageOut = (
   trigger: HTMLDivElement,
   containerAnimation: GSAPTween,
 ) => {
   const slideImg = trigger.querySelector(".slide-img");
-  const measures = getHiddenMeasures();
-
+  const measures = getImageMeasures(trigger, -1);
+  console.log(measures);
   gsap.to(slideImg, {
     ...measures,
+    duration: 0.3,
+    ease: "none",
     scrollTrigger: {
       trigger,
       containerAnimation,
