@@ -1,11 +1,11 @@
 import { gsap } from "@/js/gsap";
-import { Fragment, useEffect } from "react";
-import styled, { css } from "styled-components";
+import { useEffect } from "react";
+import { Rule } from "@/components/Grid.tsx";
 import {
+  GalleryWrapper,
+  GalleryContainer,
   BackgroundsContainer,
   BackgroundItem,
-  CreditsItem,
-  TitleItem,
   SlideItem,
 } from "@/components/Gallery/styles";
 import GalleryController from "@/js/controllers/GalleryController.ts";
@@ -16,73 +16,23 @@ interface GalleryProps {
   data: GalleryData;
 }
 
-const Rule = styled.div<{
-  $center?: boolean;
-  $color?: string;
-  $horizontal?: boolean;
-  $position?: { top?: number; right?: number; bottom?: number; left?: number };
-}>`
-  position: fixed;
-  background-color: ${(props) => props.$color};
-  width: ${(props) => (props.$horizontal ? "100%" : "2px")};
-  height: ${(props) => (props.$horizontal ? "2px" : "100%")};
-  ${(props) => {
-    if (props.$center)
-      return css`
-        left: 0;
-        right: 0;
-        margin: 0 auto;
-      `;
-  }}
-`;
-
-Rule.defaultProps = {
-  $center: false,
-  $color: "white",
-  $horizontal: false,
-  $position: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  },
-};
-
-const MainWrapper = styled.main`
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-  overflow: hidden;
-`;
-
-const SliderWrapper = styled.div`
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  will-change: transform;
-`;
-
-export const AbsoluteContainer = styled.div`
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0 auto;
-  position: absolute;
-  pointer-events: none;
-`;
-
 const Gallery = ({ id, data }: GalleryProps) => {
   useEffect(() => {
     let controller: GalleryController;
     const ctx = gsap.context(() => {
-      controller = new GalleryController(id, data);
+      controller = new GalleryController(id, data, {
+        centered: true,
+        slidesPerView: 1,
+        breakpoints: {
+          1200: {
+            centered: true,
+            slidesPerView: 3,
+          },
+        },
+      });
+
       controller.setup();
-      //controller.addListeners();
-      //this.initialAnimation();
+      //controller.initialAnimation();
     });
 
     return () => {
@@ -92,21 +42,25 @@ const Gallery = ({ id, data }: GalleryProps) => {
   }, [id, data]);
 
   return (
-    <MainWrapper id={id} className={"gallery__container"}>
-      <Rule $center />
-      {/*<BackgroundsContainer className={"gallery__backgrounds"}>
+    <GalleryContainer id={id} className={"gallery__container"}>
+      <Rule $color={"yellow"} className={"rule"} $center />
+      <BackgroundsContainer className={"gallery__backgrounds"}>
         {data.map((item, index) => (
-          <BackgroundItem key={`BackgroundItem-${index}`} item={item} />
+          <BackgroundItem
+            className={"gallery__background__item"}
+            key={`BackgroundItem-${index}`}
+            item={item}
+          />
         ))}
-      </BackgroundsContainer>*/}
+      </BackgroundsContainer>
 
-      <SliderWrapper className={"gallery__scroller"}>
+      <GalleryWrapper className={"gallery__wrapper"}>
         {data.map((item, index) => (
           <SlideItem item={item} key={`SlideItem-${index}`} />
         ))}
-      </SliderWrapper>
+      </GalleryWrapper>
 
-      {/*<AbsoluteContainer className={"gallery__titles"}>
+      {/*<TitlesContainer className={"gallery__titles"}>
         {data.map((item, index) => (
           <Fragment key={`Titles-${index}`}>
             <TitleItem item={item} index={index} />
@@ -116,7 +70,7 @@ const Gallery = ({ id, data }: GalleryProps) => {
       </AbsoluteContainer>*/}
 
       {/*<GalleryPagination data={data} />*/}
-    </MainWrapper>
+    </GalleryContainer>
   );
 };
 

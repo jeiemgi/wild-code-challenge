@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { TitleH1 } from "@/components/Text.tsx";
-import { AbsoluteContainer } from "@/components/Gallery/Gallery.tsx";
+import { AbsoluteContainer } from "@/components/Gallery/styles.ts";
 import type { GalleryData } from "@/js/data.ts";
 
 const Overlay = styled.div`

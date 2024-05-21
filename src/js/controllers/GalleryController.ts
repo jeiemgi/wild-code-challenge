@@ -25,38 +25,23 @@ import type { GalleryData } from "@/js/data.ts";
 
 const AUTO_PLAY_DURATION = 5;
 
-interface GalleryConfig {
+type MatchMediaConfig = {
+  mediaQuery: string;
+  options: GalleryOptions;
+};
+
+type GalleryOptions = {
   centered: boolean;
-  itemsInView: number;
-  breakpoints?: { [key: string]: Partial<Omit<GalleryConfig, "breakpoints">> };
-}
-
-const defaultConfig: GalleryConfig = {
-  centered: true,
-  itemsInView: 3,
-
-  breakpoints: {
-    "(max-width: 400px)": {
-      itemsInView: 1,
-    },
-  },
+  slidesPerView: number;
 };
 
-const defaultMeasures = {
-  centerLeft: 0,
-  wrapper: {
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  },
-  slide: {
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  },
+type GalleryConfig = GalleryOptions & {
+  breakpoints?: {
+    [key: string]: GalleryOptions;
+  };
 };
+type Measure = { x?: number; y?: number; width?: number; height?: number };
+type Measures = Record<string, Measure>;
 
 export class GalleryController {
   activeIndex = 0;
@@ -65,21 +50,9 @@ export class GalleryController {
   cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
   data: GalleryData;
   timeoutId: number = 0;
-
-  config = defaultConfig;
-
-  measures = defaultMeasures;
-
-  animatableProps = {
-    wrapper: {
-      x: {
-        previous: 0,
-        current: 0,
-        next: 0,
-      },
-    },
-  };
-
+  slideTriggers: ScrollTrigger[] = [];
+  config: GalleryConfig;
+  measures: Measures;
   DOM: {
     container: HTMLDivElement | null;
     wrapper: HTMLDivElement | null;
@@ -95,18 +68,34 @@ export class GalleryController {
     titles: NodeListOf<HTMLDivElement> | null;
   };
 
-  constructor(containerSelector: string, data: GalleryData) {
+  constructor(
+    containerSelector: string,
+    data: GalleryData,
+    config: GalleryConfig,
+  ) {
     this.data = data;
     const el = document.querySelector<HTMLDivElement>(`#${containerSelector}`);
-    const wrapper = querySelector(el, ".gallery__scroller");
+    const wrapper = querySelector(el, ".gallery__wrapper");
 
     if (!el) throw new Error("No container found");
     if (!wrapper) throw new Error("No wrapper found");
 
+    this.config = config;
+
+    this.measures = {
+      slide: {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      },
+    };
+
+    this.slideTriggers = [];
     this.DOM = {
       container: el,
       wrapper,
-      backgrounds: querySelectorAll(el, ".background-item"),
+      backgrounds: querySelectorAll(el, ".gallery__background__item"),
       credits: querySelectorAll(el, ".credit"),
       hovers: querySelectorAll(el, "[data-hover='true']"),
       nextBtn: querySelector(el, "#button-next"),
@@ -121,37 +110,90 @@ export class GalleryController {
 
   setMeasures = () => {
     if (this.DOM.container) {
-      const { itemsInView, centered } = this.config;
-      const slideW = window.innerWidth / itemsInView;
+      console.clear();
+      console.log(".--------setMeasures");
+
+      this.measures = {};
+      const slideW = window.innerWidth / this.config.slidesPerView;
       const slideH = this.DOM.container?.clientHeight;
-      const wrapperW = slideW * this.data.length;
-      const wrapperH = this.DOM.container?.clientHeight;
 
-      const border = this.data.length * 2;
-      const centerLeft = window.innerWidth / 2 - slideW / 2;
-
-      let activeSlideX = this.activeIndex * slideW;
-      if (centered) activeSlideX += centerLeft;
-
-      this.measures = {
-        centerLeft,
-        wrapper: {
-          y: 0,
-          x: activeSlideX,
-          height: wrapperH,
-          width: wrapperW + border,
-        },
-        slide: {
+      const setSlideMeasures = () => {
+        this.measures.slide = {
           x: 0,
           y: 0,
           width: slideW,
           height: slideH,
-        },
+        };
+
+        gsap.set(this.DOM.slides, { ...this.measures.slide });
       };
 
-      gsap.set(this.DOM.wrapper, this.measures.wrapper);
-      gsap.set(this.DOM.slides, { ...this.measures.slide });
+      const setImageMeasures = () => {
+        this.DOM.images?.forEach((img, index) => {
+          const imgMeasures = getImageMeasures(
+            { width: slideW, height: slideH },
+            index - this.activeIndex,
+          );
+          gsap.set(img, { ...imgMeasures });
+        });
+      };
+
+      const setWrapperPadding = () => {
+        gsap.set(this.DOM.wrapper, {
+          paddingLeft: this.config.centered
+            ? window.innerWidth / 2 - slideW / 2
+            : 0,
+        });
+      };
+
+      setSlideMeasures();
+      setImageMeasures();
+      setWrapperPadding();
     }
+  };
+
+  setMatchMedia = () => {
+    if (this.DOM.container) {
+      const defaultConfig = { ...this.config };
+      delete defaultConfig.breakpoints;
+      const mm = gsap.matchMedia(this.DOM.container);
+      const matchMediaArray: MatchMediaConfig[] = [];
+
+      if (this.config.breakpoints) {
+        const breakpointsKeys = Object.keys(this.config.breakpoints).map((br) =>
+          Number(br),
+        );
+
+        matchMediaArray.push({
+          mediaQuery: `(max-width: ${breakpointsKeys[0] - 1}px)`,
+          options: defaultConfig,
+        });
+
+        breakpointsKeys.forEach((br, index, array) => {
+          const nextItem = array[index + 1];
+          matchMediaArray.push({
+            mediaQuery: `(min-width: ${br}px) ${nextItem ? `and (max-width: ${nextItem}px)` : ``} `,
+            options: {
+              ...defaultConfig,
+              ...this.config.breakpoints![br],
+            },
+          });
+        });
+      } else {
+        matchMediaArray.push({
+          mediaQuery: "",
+          options: defaultConfig,
+        });
+      }
+
+      matchMediaArray.forEach((item) => {
+        mm.add(item.mediaQuery, () => (this.config = item.options));
+      });
+    }
+  };
+
+  onResize = () => {
+    this.setMeasures();
   };
 
   removeListeners = () => {
@@ -174,16 +216,15 @@ export class GalleryController {
         this.DOM.slides[index].removeEventListener("click", this.onClick);
       }
     });
-
     window.removeEventListener("resize", this.onResize);
-    window.removeEventListener("resize", this.onResize);
-
     this.cursor.cleanup();
   };
 
   addListeners = () => {
+    window.addEventListener("resize", this.onResize);
+
     // Add click listener to slides
-    this.DOM.hovers?.forEach((el) => {
+    /*this.DOM.hovers?.forEach((el) => {
       el.addEventListener("mouseenter", this.cursor.hoverIn);
       el.addEventListener("mouseleave", this.cursor.hoverOut);
     });
@@ -194,10 +235,7 @@ export class GalleryController {
 
     this.DOM.paginationDots?.forEach((dot) => {
       dot.addEventListener("click", this.onClick);
-    });
-
-    window.addEventListener("resize", this.onResize);
-    window.addEventListener("resize", this.onResize);
+    });*/
   };
 
   get hasNext() {
@@ -252,62 +290,79 @@ export class GalleryController {
       });
     };
 
-    const setupImages = () => {
-      this.DOM.images?.forEach((img, index) => {
-        const measures = getImageMeasures(
-          this.measures.slide,
-          index - this.activeIndex,
-        );
-        gsap.set(img, { ...measures });
-      });
-    };
-
     const setupScroll = () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           scrub: 1,
           snap: {
-            duration: 0.05,
-            ease: "power2.out",
+            duration: 0.005,
+            ease: "power1.out",
             snapTo: "labelsDirectional",
           },
           pin: true,
           trigger: this.DOM.container,
-          end: () => `+=${this.data.length * 100}%`,
+          end: () => `+=${this.data.length * 150}%`,
         },
       });
 
       const duration = 1;
       const count = this.data.length - 1;
 
+      const slideMeasures = {
+        x: this.measures.slide.x || 0,
+        y: this.measures.slide.y || 0,
+        width: this.measures.slide.width || 0,
+        height: this.measures.slide.height || 0,
+      };
+
+      const prevMeasures = getImageMeasures(slideMeasures, -1);
+      const activeMeasures = getImageMeasures(slideMeasures, 0);
+      const nextMeasures = getImageMeasures(slideMeasures, 1);
+
       this.DOM.slides?.forEach((slide, index) => {
         tl.add("label" + index, index * (duration / count));
 
-        if (this.DOM.images && this.DOM.images[index]) {
+        if (
+          this.DOM.images &&
+          this.DOM.images[index] &&
+          this.measures.slide.width &&
+          this.measures.slide.height
+        ) {
           const image = this.DOM.images[index];
 
-          scrollTriggerInterpolate({
+          const activeInterpolation = gsap.utils.interpolate([
+            activeMeasures,
+            prevMeasures,
+          ]);
+
+          ScrollTrigger.create({
+            markers: true,
             trigger: slide,
-            element: image,
-            fromPosition: 0,
-            toPosition: -1,
             start: "50% center",
             end: "149.9% center",
             containerAnimation: tl,
+            onUpdate: (self) => {
+              gsap.set(image, activeInterpolation(self.progress));
+            },
           });
 
           const prevImage = this.DOM.images[index - 1]
             ? this.DOM.images[index - 1]
             : null;
           if (prevImage) {
-            scrollTriggerInterpolate({
+            const restInterpolation = gsap.utils.interpolate([
+              nextMeasures,
+              activeMeasures,
+            ]);
+
+            ScrollTrigger.create({
               trigger: slide,
-              element: image,
-              fromPosition: 1,
-              toPosition: 0,
               start: "-50% center",
               end: "49.9% center",
               containerAnimation: tl,
+              onUpdate: (self) => {
+                gsap.set(image, restInterpolation(self.progress));
+              },
             });
           }
         }
@@ -320,28 +375,14 @@ export class GalleryController {
       });
     };
 
-    this.handleActiveClassNames();
+    this.setMatchMedia();
+
     this.setMeasures();
+    this.addListeners();
+    this.handleActiveClassNames();
     setupTitles();
-    setupImages();
     setupScroll();
     //setupBackgrounds();
-  };
-
-  onResize = () => {
-    this.setup();
-  };
-
-  start = () => {
-    clearTimeout(this.timeoutId);
-    this.timeoutId = setTimeout(() => {
-      this.nextSlide();
-    }, AUTO_PLAY_DURATION * 1000);
-  };
-
-  stop = () => {
-    clearTimeout(this.timeoutId);
-    this.cursor.timeline.pause(0);
   };
 
   initialAnimation = () => {
@@ -354,18 +395,6 @@ export class GalleryController {
       },
     });
 
-    const animateScroll = () => {
-      if (this.DOM.wrapper && this.DOM.slides) {
-        const slideWidth = this.DOM.slides[0].clientWidth;
-        tl.fromTo(
-          this.DOM.wrapper,
-          { x: window.innerWidth },
-          { x: slideWidth / 2, duration: 1 },
-          0.5,
-        );
-      }
-    };
-
     const animateBackground = () => {
       if (this.DOM.backgrounds) {
         tl.to(
@@ -373,7 +402,6 @@ export class GalleryController {
           {
             opacity: 1,
             duration: 1,
-            ease: "circ.out",
           },
           0,
         );
@@ -397,10 +425,21 @@ export class GalleryController {
     };
 
     animateBackground();
-    animateScroll();
-    animateCopy();
+    //animateCopy();
 
     tl.play();
+  };
+
+  start = () => {
+    clearTimeout(this.timeoutId);
+    this.timeoutId = setTimeout(() => {
+      this.nextSlide();
+    }, AUTO_PLAY_DURATION * 1000);
+  };
+
+  stop = () => {
+    clearTimeout(this.timeoutId);
+    this.cursor.timeline.pause(0);
   };
 
   nextSlide = () => {

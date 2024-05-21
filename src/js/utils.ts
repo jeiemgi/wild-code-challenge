@@ -4,21 +4,17 @@ export const clamp = (num: number, min: number, max: number) =>
   Math.min(Math.max(num, min), max);
 
 export const getImageMeasures = (
-  target:
-    | {
-        width: number;
-        height: number;
-      }
-    | Element,
+  {
+    width,
+    height,
+  }: {
+    width: number;
+    height: number;
+  },
   position = -1,
 ) => {
   let posX = 0;
   let posY = 0;
-
-  const width = target instanceof Element ? target.clientWidth : target.width;
-  const height =
-    target instanceof Element ? target.clientHeight : target.height;
-
   const imageW = position === 0 ? width : width / 2;
   const imageH = position === 0 ? height * 0.75 : height * 0.36;
 
@@ -32,10 +28,10 @@ export const getImageMeasures = (
   }
 
   return {
-    x: posX,
-    y: posY,
-    width: imageW,
-    height: imageH,
+    x: Number(posX.toFixed(2)),
+    y: Number(posY.toFixed(2)),
+    width: Number(imageW.toFixed(2)),
+    height: Number(imageH.toFixed(2)),
   };
 };
 

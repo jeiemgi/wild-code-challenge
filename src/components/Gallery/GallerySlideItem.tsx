@@ -6,13 +6,11 @@ const SlideItemStyle = styled.div`
   height: 100%;
   display: inline-block;
   position: relative;
-  align-items: start;
-  justify-content: end;
-  pointer-events: none;
-  user-select: none;
   vertical-align: top;
-  overflow: hidden;
-  border: dashed 1px yellow;
+  user-select: none;
+  pointer-events: none;
+  border: dashed 1px mediumpurple;
+  background-color: purple;
 
   &.slide--active,
   &.slide--next,
@@ -29,7 +27,6 @@ const SlideItemContent = styled.div`
   pointer-events: none;
   overflow: hidden;
   transform-origin: center;
-  background-color: cornflowerblue;
   border: solid 1px black;
   will-change: transform;
 `;
@@ -40,8 +37,8 @@ const SlideItemImg = styled.img`
   width: 100%;
   height: 100%;
   position: absolute;
-  pointer-events: none;
   object-fit: cover;
+  pointer-events: none;
 `;
 
 export const SlideItem = ({

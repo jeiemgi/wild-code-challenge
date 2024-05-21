@@ -40,9 +40,9 @@ export const scrollTriggerInterpolate = ({
   fromPosition: number;
   toPosition: number;
 } & ScrollTrigger["vars"]) => {
-  const fromPos = getImageMeasures(trigger, fromPosition);
-  const toPos = getImageMeasures(trigger, toPosition);
-  const interp = gsap.utils.interpolate([fromPos, toPos]);
+  const fromMeasures = getImageMeasures(trigger, fromPosition);
+  const toMeasures = getImageMeasures(trigger, toPosition);
+  const interp = gsap.utils.interpolate([fromMeasures, toMeasures]);
 
   ScrollTrigger.create({
     trigger,
