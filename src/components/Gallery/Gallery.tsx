@@ -7,6 +7,8 @@ import {
   BackgroundsContainer,
   BackgroundItem,
   SlideItem,
+  TitlesContainer,
+  TitleItem,
 } from "@/components/Gallery/styles";
 import GalleryController from "@/js/controllers/GalleryController.ts";
 import type { GalleryData } from "@/js/data.ts";
@@ -32,7 +34,7 @@ const Gallery = ({ id, data }: GalleryProps) => {
       });
 
       controller.setup();
-      //controller.initialAnimation();
+      controller.initialAnimation();
     });
 
     return () => {
@@ -60,14 +62,11 @@ const Gallery = ({ id, data }: GalleryProps) => {
         ))}
       </GalleryWrapper>
 
-      {/*<TitlesContainer className={"gallery__titles"}>
+      <TitlesContainer className={"gallery__titles"}>
         {data.map((item, index) => (
-          <Fragment key={`Titles-${index}`}>
-            <TitleItem item={item} index={index} />
-            <CreditsItem item={item} key={`Credits-${index}`} />
-          </Fragment>
+          <TitleItem item={item} index={index} key={`Titles-${index}`} />
         ))}
-      </AbsoluteContainer>*/}
+      </TitlesContainer>
 
       {/*<GalleryPagination data={data} />*/}
     </GalleryContainer>

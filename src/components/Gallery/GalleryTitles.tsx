@@ -1,19 +1,18 @@
 import styled from "styled-components";
 import { TitleH1 } from "@/components/Text.tsx";
-import { AbsoluteContainer } from "@/components/Gallery/styles.ts";
 import type { GalleryData } from "@/js/data.ts";
 
 const Overlay = styled.div`
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
   pointer-events: none;
+  overflow: hidden;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
 
   &.slide-title {
     pointer-events: none;
@@ -45,9 +44,9 @@ export const TitleItem = ({
     <Overlay
       data-index={index}
       key={`GalleryTitle-${index}`}
-      className={"gallery-title"}
+      className={"slide-title-item"}
     >
-      <AbsoluteContainer className="relative">
+      <div className={"relative"}>
         <TitleH1 $outline className={"outline"}>
           {item.title}
         </TitleH1>
@@ -55,7 +54,7 @@ export const TitleItem = ({
         <FillClip>
           <TitleH1 className={"fill"}>{item.title}</TitleH1>
         </FillClip>
-      </AbsoluteContainer>
+      </div>
     </Overlay>
   );
 };

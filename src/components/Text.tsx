@@ -23,8 +23,6 @@ export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   the font has a weird behavior on the line-height.
    */
   .char-wrap {
-    opacity: 0;
-    overflow: hidden;
     line-height: 0.68em;
     padding-top: 0.09em;
     margin-top: -0.045em;
@@ -32,6 +30,7 @@ export const TitleH1 = styled.h1<{ $outline?: boolean }>`
   }
 
   .char {
+    overflow: hidden;
     line-height: 0.68em;
     padding-top: 0.09em;
     margin-top: -0.045em;

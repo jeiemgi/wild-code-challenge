@@ -15,7 +15,6 @@ export const GalleryContainer = styled.div`
 export const GalleryWrapper = styled.div`
   height: 100%;
   white-space: nowrap;
-  border: solid 2px yellow;
 `;
 
 export const AbsoluteContainer = styled.div`

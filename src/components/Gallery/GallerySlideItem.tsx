@@ -9,7 +9,6 @@ const SlideItemStyle = styled.div`
   vertical-align: top;
   user-select: none;
   pointer-events: none;
-  border: dashed 1px mediumpurple;
   will-change: transform;
 
   &.slide--active,
@@ -23,11 +22,10 @@ const SlideItemStyle = styled.div`
 const SlideItemContent = styled.div`
   display: flex;
   position: relative;
-  border-radius: 10px;
   pointer-events: none;
   overflow: hidden;
   transform-origin: center;
-  border: solid 1px black;
+  padding: 16px;
   will-change: transform;
 `;
 
@@ -36,9 +34,10 @@ const SlideItemImg = styled.img`
   left: 0;
   width: 100%;
   height: 100%;
-  position: absolute;
   object-fit: cover;
   pointer-events: none;
+  border: solid 1px black;
+  border-radius: 10px;
   will-change: transform;
 `;
 
@@ -50,7 +49,7 @@ export const SlideItem = ({
 } & HTMLProps<HTMLDivElement>) => {
   return (
     <SlideItemStyle className={"slide-item"} {...props}>
-      <SlideItemContent data-hover className={"slide-img"}>
+      <SlideItemContent data-hover className={"slide-item__img"}>
         <SlideItemImg src={item.image.url} alt={item.image.alt} />
       </SlideItemContent>
     </SlideItemStyle>
