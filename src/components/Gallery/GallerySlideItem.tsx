@@ -11,8 +11,8 @@ const SlideItemStyle = styled.div`
   pointer-events: none;
   user-select: none;
   vertical-align: top;
-  border: dashed 1px yellow;
   overflow: hidden;
+  border: dashed 1px yellow;
 
   &.slide--active,
   &.slide--next,
@@ -38,6 +38,7 @@ const SlideItemImg = styled.img`
   top: 0;
   left: 0;
   width: 100%;
+  height: 100%;
   position: absolute;
   pointer-events: none;
   object-fit: cover;
@@ -52,7 +53,7 @@ export const SlideItem = ({
   return (
     <SlideItemStyle className={"slide-item"} {...props}>
       <SlideItemContent data-hover className={"slide-img"}>
-        {/*<SlideItemImg src={item.image.url} alt={item.image.alt} />*/}
+        <SlideItemImg src={item.image.url} alt={item.image.alt} />
       </SlideItemContent>
     </SlideItemStyle>
   );

@@ -9,16 +9,15 @@ export const getImageMeasures = (
         width: number;
         height: number;
       }
-    | HTMLDivElement,
+    | Element,
   position = -1,
 ) => {
   let posX = 0;
   let posY = 0;
 
-  const width =
-    target instanceof HTMLDivElement ? target.clientWidth : target.width;
+  const width = target instanceof Element ? target.clientWidth : target.width;
   const height =
-    target instanceof HTMLDivElement ? target.clientHeight : target.height;
+    target instanceof Element ? target.clientHeight : target.height;
 
   const imageW = position === 0 ? width : width / 2;
   const imageH = position === 0 ? height * 0.75 : height * 0.36;
@@ -37,13 +36,6 @@ export const getImageMeasures = (
     y: posY,
     width: imageW,
     height: imageH,
-  };
-};
-
-export const getHiddenMeasures = () => {
-  return {
-    x: 16,
-    y: 16,
   };
 };
 

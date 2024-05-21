@@ -1,9 +1,5 @@
-import { gsap } from "@/js/gsap";
-import {
-  getActiveMeasures,
-  getHiddenMeasures,
-  getImageMeasures,
-} from "@/js/utils.ts";
+import { gsap, ScrollTrigger } from "@/js/gsap";
+import { getImageMeasures } from "@/js/utils.ts";
 
 const getChars = (title: HTMLDivElement) => {
   return [
@@ -32,6 +28,31 @@ export const scrollOut: GSAPTweenVars["scrollTrigger"] = {
   end: "right center",
 };
 
+export const scrollTriggerInterpolate = ({
+  element,
+  fromPosition,
+  toPosition,
+  trigger,
+  ...rest
+}: {
+  trigger: HTMLDivElement;
+  element: Element;
+  fromPosition: number;
+  toPosition: number;
+} & ScrollTrigger["vars"]) => {
+  const fromPos = getImageMeasures(trigger, fromPosition);
+  const toPos = getImageMeasures(trigger, toPosition);
+  const interp = gsap.utils.interpolate([fromPos, toPos]);
+
+  ScrollTrigger.create({
+    trigger,
+    ...rest,
+    onUpdate: (self) => {
+      gsap.set(element, interp(self.progress));
+    },
+  });
+};
+
 export const tweenImageIn = (
   trigger: HTMLDivElement,
   containerAnimation: GSAPTween,
@@ -47,10 +68,6 @@ export const tweenImageIn = (
       ...scrollIn,
     },
   });
-};
-
-const interpolateProgress = (slide: HTMLDivElement, progress: number) => {
-  const slideImg = trigger.querySelector(".slide-img");
 };
 
 export const tweenImageOut = (

@@ -62,7 +62,6 @@ const SliderWrapper = styled.div`
   height: 100%;
   position: absolute;
   will-change: transform;
-  border: inset 5px red;
 `;
 
 export const AbsoluteContainer = styled.div`

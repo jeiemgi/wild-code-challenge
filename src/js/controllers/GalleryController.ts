@@ -16,6 +16,7 @@ import {
   scrollBackgroundOut,
   scrollTextIn,
   scrollTextOut,
+  scrollTriggerInterpolate,
   tweenImageIn,
   tweenImageOut,
 } from "@/js/animations.ts";
@@ -136,10 +137,9 @@ export class GalleryController {
         centerLeft,
         wrapper: {
           y: 0,
-          x: 0,
+          x: activeSlideX,
           height: wrapperH,
           width: wrapperW + border,
-          paddingLeft: activeSlideX,
         },
         slide: {
           x: 0,
@@ -280,38 +280,36 @@ export class GalleryController {
       const duration = 1;
       const count = this.data.length - 1;
 
-      const quickSetters = [];
       this.DOM.slides?.forEach((slide, index) => {
         tl.add("label" + index, index * (duration / count));
 
         if (this.DOM.images && this.DOM.images[index]) {
-          const nextMeasures = getImageMeasures(slide, 1);
-          const activeMeasures = getImageMeasures(slide, 0);
-          const prevMeasures = getImageMeasures(slide, -1);
           const image = this.DOM.images[index];
-          const interpolate = gsap.utils.interpolate([
-            nextMeasures,
-            activeMeasures,
-            prevMeasures,
-          ]);
 
-          const setter = {
-            x: gsap.quickSetter(image, "x"),
-            y: gsap.quickSetter(image, "x"),
-            width: gsap.quickSetter(image, "x"),
-            height: gsap.quickSetter(image, "x"),
-          };
-
-          ScrollTrigger.create({
-            markers: true,
+          scrollTriggerInterpolate({
             trigger: slide,
-            start: "left center",
-            end: "right center",
+            element: image,
+            fromPosition: 0,
+            toPosition: -1,
+            start: "50% center",
+            end: "149.9% center",
             containerAnimation: tl,
-            onUpdate: (self) => {
-              gsap.set(image, interpolate(self.progress));
-            },
           });
+
+          const prevImage = this.DOM.images[index - 1]
+            ? this.DOM.images[index - 1]
+            : null;
+          if (prevImage) {
+            scrollTriggerInterpolate({
+              trigger: slide,
+              element: image,
+              fromPosition: 1,
+              toPosition: 0,
+              start: "-50% center",
+              end: "49.9% center",
+              containerAnimation: tl,
+            });
+          }
         }
       });
 
