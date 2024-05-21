@@ -10,6 +10,7 @@ const BackgroundStyle = styled.div`
   position: absolute;
   background-size: cover;
   background-position: center;
+  transform: scale(1.5);
 `;
 
 export function BackgroundItem({

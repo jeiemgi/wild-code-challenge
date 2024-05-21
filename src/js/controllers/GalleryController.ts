@@ -85,7 +85,7 @@ export class GalleryController {
     this.DOM = {
       container: el,
       wrapper,
-      backgrounds: querySelectorAll(el, ".gallery__background__item"),
+      backgrounds: querySelectorAll(el, ".slide-background-item"),
       credits: querySelectorAll(el, ".credit"),
       hovers: querySelectorAll(el, "[data-hover='true']"),
       nextBtn: querySelector(el, "#button-next"),
@@ -275,6 +275,12 @@ export class GalleryController {
       });
     };
 
+    const setupBackgrounds = () => {
+      this.DOM.backgrounds?.forEach((bg) => {
+        gsap.set(bg, { opacity: 0 });
+      });
+    };
+
     const setupScroll = () => {
       const duration = 1;
       const count = this.data.length - 1;
@@ -360,17 +366,45 @@ export class GalleryController {
         });
       };
 
-      const backgroundInterpolation = () => {};
+      const backgroundInterpolation = () => {
+        const leaveTriggers = ["50% center", "right center"];
+        const enterTriggers = ["left center", "center center"];
+        const enterVars = [
+          { opacity: 0, xPercent: 20 },
+          { opacity: 1, xPercent: 0 },
+        ];
+        const leaveVars = [
+          { opacity: 1, xPercent: 0 },
+          { opacity: 0, xPercent: -20 },
+        ];
+
+        this.DOM.backgrounds?.forEach((bg, index) => {
+          if (this.DOM.slides) {
+            enterLeaveInterpolation({
+              target: bg,
+              trigger: this.DOM.slides[index],
+              enterTriggers,
+              leaveTriggers,
+              enterVars,
+              leaveVars,
+              containerAnimation: scrollTimeline,
+            });
+          }
+        });
+      };
+
       imagesInterpolation();
       titlesInterpolation();
+      backgroundInterpolation();
     };
 
     this.setMatchMedia();
-
     this.setMeasures();
     this.addListeners();
     this.handleActiveClassNames();
+
     setupTitles();
+    setupBackgrounds();
     setupScroll();
   };
 

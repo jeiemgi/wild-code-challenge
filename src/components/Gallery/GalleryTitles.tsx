@@ -36,16 +36,14 @@ const FillClip = styled.span`
 export const TitleItem = ({
   item,
   index,
+  className,
 }: {
   item: GalleryData[0];
   index: number;
+  className: string;
 }) => {
   return (
-    <Overlay
-      data-index={index}
-      key={`GalleryTitle-${index}`}
-      className={"slide-title-item"}
-    >
+    <Overlay data-index={index} className={className}>
       <div className={"relative"}>
         <TitleH1 $outline className={"outline"}>
           {item.title}

@@ -48,7 +48,7 @@ export const SlideItem = ({
   item: GalleryData[0];
 } & HTMLProps<HTMLDivElement>) => {
   return (
-    <SlideItemStyle className={"slide-item"} {...props}>
+    <SlideItemStyle {...props}>
       <SlideItemContent data-hover className={"slide-item__img"}>
         <SlideItemImg src={item.image.url} alt={item.image.alt} />
       </SlideItemContent>

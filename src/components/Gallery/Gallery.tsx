@@ -1,6 +1,5 @@
 import { gsap } from "@/js/gsap";
 import { useEffect } from "react";
-import { Rule } from "@/components/Grid.tsx";
 import {
   GalleryWrapper,
   GalleryContainer,
@@ -45,26 +44,36 @@ const Gallery = ({ id, data }: GalleryProps) => {
 
   return (
     <GalleryContainer id={id} className={"gallery__container"}>
-      <Rule $color={"yellow"} className={"rule"} $center />
+      {/*<Rule $color={"yellow"} className={"rule"} $center />*/}
+
       <BackgroundsContainer className={"gallery__backgrounds"}>
         {data.map((item, index) => (
           <BackgroundItem
-            className={"gallery__background__item"}
-            key={`BackgroundItem-${index}`}
             item={item}
+            key={`BackgroundItem-${index}`}
+            className={"slide-background-item"}
           />
         ))}
       </BackgroundsContainer>
 
       <GalleryWrapper className={"gallery__wrapper"}>
         {data.map((item, index) => (
-          <SlideItem item={item} key={`SlideItem-${index}`} />
+          <SlideItem
+            item={item}
+            className={"slide-item"}
+            key={`SlideItem-${index}`}
+          />
         ))}
       </GalleryWrapper>
 
       <TitlesContainer className={"gallery__titles"}>
         {data.map((item, index) => (
-          <TitleItem item={item} index={index} key={`Titles-${index}`} />
+          <TitleItem
+            item={item}
+            index={index}
+            key={`Titles-${index}`}
+            className={"slide-title-item"}
+          />
         ))}
       </TitlesContainer>
 
