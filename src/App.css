@@ -12,6 +12,10 @@
   font-display: swap;
 }
 
+html, body {
+  scroll-behavior: auto !important;
+}
+
 body {
   cursor: none;
   background-color: #000;

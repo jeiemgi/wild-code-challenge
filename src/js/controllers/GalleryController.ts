@@ -1,4 +1,4 @@
-import { gsap, ScrollTrigger } from "@/js/gsap.ts";
+import { gsap, ScrollTrigger, Draggable, Observer } from "@/js/gsap.ts";
 import {
   debounce,
   getImageMeasures,
@@ -7,30 +7,29 @@ import {
   splitTitle,
 } from "@/js/utils.ts";
 import CursorController from "@/js/controllers/CursorController.ts";
+import {
+  backgroundInterpolation,
+  imagesInterpolation,
+  titlesInterpolation,
+} from "@/js/animations.ts";
 import type { GalleryData } from "@/js/data.ts";
-import { enterLeaveInterpolation } from "@/js/animations.ts";
 
 const AUTO_PLAY_DURATION = 5;
-
-type MatchMediaConfig = {
-  mediaQuery: string;
-  options: GalleryOptions;
+const defaultMeasures = {
+  centerLeft: 0,
+  slide: { x: 0, y: 0, height: 0, width: 0 },
 };
 
-type GalleryOptions = {
+export type GalleryOptions = {
+  mobile: boolean;
+  mediaQuery: string;
   centered: boolean;
   slidesPerView: number;
+  imageXPercent: number;
+  alignImageRight: boolean;
 };
 
-type GalleryConfig = GalleryOptions & {
-  breakpoints?: {
-    [key: string]: GalleryOptions;
-  };
-};
-
-const defaultMeasures = { slide: { x: 0, y: 0, height: 0, width: 0 } };
-type Measure = { x?: number; y?: number; width?: number; height?: number };
-type Measures = Record<keyof typeof defaultMeasures, Measure>;
+type Measures = typeof defaultMeasures;
 
 export class GalleryController {
   booted = false;
@@ -40,10 +39,39 @@ export class GalleryController {
   cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
   data: GalleryData;
   measures: Measures = defaultMeasures;
-  config: GalleryConfig;
-  scrollTimeline: GSAPTimeline | null = null;
+
+  options?: GalleryOptions;
+  configs: GalleryOptions[] = [
+    {
+      mobile: true,
+      mediaQuery: "(max-width: 600px)",
+      centered: false,
+      slidesPerView: 1,
+      imageXPercent: 1,
+      alignImageRight: false,
+    },
+    {
+      mobile: true,
+      mediaQuery: "(min-width: 601px) and (max-width: 1200px)",
+      centered: true,
+      slidesPerView: 2,
+      imageXPercent: 0.8,
+      alignImageRight: false,
+    },
+    {
+      mobile: false,
+      mediaQuery: "(min-width: 1201px)",
+      centered: true,
+      slidesPerView: 3,
+      imageXPercent: 0.5,
+      alignImageRight: true,
+    },
+  ];
+
+  scrollTrigger: ScrollTrigger;
 
   DOM: {
+    dragProxy: HTMLDivElement | null;
     container: HTMLDivElement | null;
     wrapper: HTMLDivElement | null;
     backgrounds: NodeListOf<HTMLDivElement> | null;
@@ -58,11 +86,7 @@ export class GalleryController {
     titles: NodeListOf<HTMLDivElement> | null;
   };
 
-  constructor(
-    containerSelector: string,
-    data: GalleryData,
-    config: GalleryConfig,
-  ) {
+  constructor(containerSelector: string, data: GalleryData) {
     this.data = data;
     const el = document.querySelector<HTMLDivElement>(`#${containerSelector}`);
     const wrapper = querySelector(el, ".gallery__wrapper");
@@ -70,7 +94,7 @@ export class GalleryController {
     if (!el) throw new Error("No container found");
     if (!wrapper) throw new Error("No wrapper found");
 
-    this.config = config;
+    this.scrollTrigger = ScrollTrigger.create({ trigger: el });
 
     this.DOM = {
       container: el,
@@ -78,6 +102,7 @@ export class GalleryController {
       backgrounds: querySelectorAll(el, ".slide-background-item"),
       credits: querySelectorAll(el, ".credit"),
       hovers: querySelectorAll(el, "[data-hover='true']"),
+      dragProxy: querySelector(el, ".drag-proxy"),
       nextBtn: querySelector(el, "#button-next"),
       paginationDots: querySelectorAll(el, ".pagination__dot"),
       paginationNumber: querySelector(el, ".pagination__number"),
@@ -89,98 +114,60 @@ export class GalleryController {
   }
 
   setMeasures = () => {
-    if (this.DOM.container) {
+    if (this.DOM.container && this.options) {
       this.measures = defaultMeasures;
-      const slideW = window.innerWidth / this.config.slidesPerView;
-      const slideH = this.DOM.container?.clientHeight;
 
-      const setSlideMeasures = () => {
-        this.measures.slide = {
-          x: 0,
-          y: 0,
-          width: slideW,
-          height: slideH,
-        };
-        gsap.set(this.DOM.slides, { ...this.measures.slide });
+      let slideW = window.innerWidth / this.options.slidesPerView;
+      slideW = Number(slideW.toFixed(2));
+
+      let slideH = this.DOM.container?.clientHeight;
+      slideH = Number(slideH.toFixed(2));
+
+      // setSlideMeasures
+      const slideMeasures = {
+        x: 0,
+        y: 0,
+        width: slideW,
+        height: slideH,
       };
+      gsap.set(this.DOM.slides, { ...slideMeasures });
 
-      const setImageMeasures = () => {
-        this.DOM.images?.forEach((img, index) => {
+      // setImageMeasures
+      this.DOM.images?.forEach((img, index) => {
+        if (this.options) {
           const imgMeasures = getImageMeasures(
             { width: slideW, height: slideH },
             index - this.activeIndex,
+            this.options,
           );
           gsap.set(img, { ...imgMeasures });
-        });
-      };
-
-      const setWrapperPadding = () => {
-        gsap.set(this.DOM.wrapper, {
-          paddingLeft: this.config.centered
-            ? window.innerWidth / 2 - slideW / 2
-            : 0,
-        });
-      };
-
-      setSlideMeasures();
-      setImageMeasures();
-      setWrapperPadding();
-    }
-  };
-
-  setMatchMedia = () => {
-    if (this.DOM.container) {
-      const defaultConfig = { ...this.config };
-      delete defaultConfig.breakpoints;
-
-      const mm = gsap.matchMedia(this.DOM.container);
-      const matchMediaArray: MatchMediaConfig[] = [];
-
-      if (this.config.breakpoints) {
-        const breakpointsKeys = Object.keys(this.config.breakpoints).map((br) =>
-          Number(br),
-        );
-
-        matchMediaArray.push({
-          mediaQuery: `(max-width: ${breakpointsKeys[0] - 1}px)`,
-          options: defaultConfig,
-        });
-
-        breakpointsKeys.forEach((br, index, array) => {
-          const nextItem = array[index + 1];
-          matchMediaArray.push({
-            mediaQuery: `(min-width: ${br}px) ${nextItem ? `and (max-width: ${nextItem}px)` : ``} `,
-            options: {
-              ...defaultConfig,
-              ...this.config.breakpoints![br],
-            },
-          });
-        });
-      } else {
-        matchMediaArray.push({
-          mediaQuery: "",
-          options: defaultConfig,
-        });
-      }
-
-      matchMediaArray.forEach((item) => {
-        mm.add(item.mediaQuery, () => (this.config = item.options));
+        }
       });
-    }
-  };
 
-  onResize = () => {
-    gsap.to(this.DOM.container, { xPercent: -10, opacity: 0 });
+      const slidesWidth = slideW * this.data.length;
+      const centerLeft = window.innerWidth / 2 - slideW / 2;
+
+      gsap.set(this.DOM.wrapper, {
+        width: slidesWidth,
+        paddingLeft: this.options.centered ? centerLeft : 0,
+      });
+
+      this.measures = {
+        centerLeft,
+        slide: slideMeasures,
+      };
+    } else {
+      console.log("No options");
+    }
   };
 
   onResizeFinished = debounce(() => {
-    ScrollTrigger.killAll();
-    this.setup();
-    gsap.to(this.DOM.container, { xPercent: 0, opacity: 1 });
-  }, 500);
+    this.matchMediaCheck();
+    this.setupScroll();
+  }, 150);
 
   addListeners = () => {
-    window.addEventListener("resize", this.onResize);
+    //window.addEventListener("resize", this.onResize);
     window.addEventListener("resize", this.onResizeFinished);
 
     // Add click listener to slides
@@ -199,7 +186,7 @@ export class GalleryController {
   };
 
   removeListeners = () => {
-    window.removeEventListener("resize", this.onResize);
+    //window.removeEventListener("resize", this.onResize);
     window.removeEventListener("resize", this.onResizeFinished);
 
     this.DOM.slides?.forEach((slide) => {
@@ -251,136 +238,123 @@ export class GalleryController {
   };
 
   setupScroll = () => {
+    if (!this.DOM.wrapper || !this.DOM.dragProxy || !this.DOM.slides) return;
+
+    ScrollTrigger.killAll();
+
     const duration = 1;
     const count = this.data.length - 1;
-    let prevIndex = this.activeIndex;
+    const prevIndex = this.activeIndex;
 
-    const timeline = gsap.timeline({
-      scrollTrigger: {
-        scrub: 0.1,
-        onUpdate: (s) => {
-          if (s.progress <= 1) {
-            this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
-            if (this.activeIndex !== prevIndex) {
-              this.handleActiveClassNames(false, prevIndex);
-              prevIndex = this.activeIndex;
-            }
+    const createScrollerTimeline = () => {
+      const tl = gsap.timeline({});
+
+      // Add labels for snapping
+      this.DOM.slides?.forEach((_, index) => {
+        tl.add("label" + index, index * (duration / count));
+      });
+
+      tl.to(this.DOM.slides, {
+        duration,
+        ease: "none",
+        xPercent: -100 * count,
+      });
+
+      imagesInterpolation(tl, this);
+      titlesInterpolation(tl, this);
+      backgroundInterpolation(tl, this);
+
+      return tl;
+    };
+
+    const tl = createScrollerTimeline();
+
+    const wrapperRect = this.DOM.wrapper.getBoundingClientRect();
+    const maxScroll = wrapperRect.width - window.innerWidth;
+
+    const trigger = ScrollTrigger.create({
+      markers: true,
+      scrub: 0,
+      pin: true,
+      animation: tl,
+      trigger: this.DOM.container,
+      start: "top top",
+      end: () => "+=" + wrapperRect.width,
+
+      onUpdate: (s) => {
+        /*if (s.progress <= 1) {
+          this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
+          if (this.activeIndex !== prevIndex) {
+            this.handleActiveClassNames(false, prevIndex);
+            prevIndex = this.activeIndex;
           }
-        },
-        snap: {
-          delay: 0.01,
-          duration: 1,
-          ease: "power4.out",
-          snapTo: "labelsDirectional",
-        },
-        pin: true,
-        trigger: this.DOM.container,
-        end: () => `+=${this.data.length * 150}%`,
+        }*/
+      },
+      snap: {
+        delay: 0.01,
+        duration: 1,
+        ease: "power4.out",
+        snapTo: "labelsDirectional",
       },
     });
 
-    timeline.to(this.DOM.slides, {
-      duration,
-      ease: "none",
-      xPercent: -100 * count,
+    let dragRatio: number;
+    let dragClamp: (value: number) => number;
+
+    Draggable.create(this.DOM.dragProxy, {
+      type: "x",
+      lockAxis: true,
+      inertia: true,
+      resistance: 1,
+      trigger: this.DOM.wrapper,
+      onPress() {
+        ScrollTrigger.refresh();
+        this.startScroll = trigger.scroll();
+      },
+      onDrag: function () {
+        const clampedX = dragClamp(
+          this.startScroll - (this.x - this.startX) * dragRatio,
+        );
+        gsap.to(window, { scrollTo: clampedX });
+      },
+      onThrowUpdate: function () {
+        const clampedX = dragClamp(
+          this.startScroll - (this.x - this.startX) * dragRatio,
+        );
+        gsap.to(window, { scrollTo: clampedX });
+      },
     });
 
-    const imagesInterpolation = () => {
-      const slideMeasures = {
-        x: this.measures.slide.x || 0,
-        y: this.measures.slide.y || 0,
-        width: this.measures.slide.width || 0,
-        height: this.measures.slide.height || 0,
-      };
+    ScrollTrigger.addEventListener("refresh", () => {
+      if (!this.DOM.wrapper) return;
+      dragClamp = gsap.utils.clamp(trigger.start + 1, trigger.end - 1);
+      dragRatio = wrapperRect.width / maxScroll;
+    });
 
-      const prevMeasures = getImageMeasures(slideMeasures, -1);
-      const activeMeasures = getImageMeasures(slideMeasures, 0);
-      const nextMeasures = getImageMeasures(slideMeasures, 1);
+    /*document.addEventListener("keyup", (e) => {
+      const id = e.target.getAttribute("href");
+      if (!id || e.key !== "Tab") return;
+      const section = document.querySelector(id);
+      const y = section.getBoundingClientRect().top + window.scrollY;
+      st.scroll(y);
+    });*/
 
-      const leaveTriggers = ["50% center", "149.9% center"];
-      const enterTriggers = ["-50% center", "49.9% center"];
-      const leaveVars = [activeMeasures, prevMeasures];
-      const enterVars = [nextMeasures, activeMeasures];
+    this.scrollTrigger = trigger;
+  };
 
-      this.DOM.slides?.forEach((slide, index) => {
-        timeline.add("label" + index, index * (duration / count));
-        if (
-          this.DOM.images &&
-          this.DOM.images[index] &&
-          this.measures.slide.width &&
-          this.measures.slide.height
-        ) {
-          const image = this.DOM.images[index];
-          enterLeaveInterpolation({
-            target: image,
-            trigger: slide,
-            enterTriggers,
-            leaveTriggers,
-            enterVars,
-            leaveVars,
-            containerAnimation: timeline,
-          });
-        }
-      });
-    };
-
-    const titlesInterpolation = () => {
-      const leaveTriggers = ["50% center", "right center"];
-      const enterTriggers = ["left center", "center center"];
-      const enterVars = [{ xPercent: 100 }, { xPercent: 0 }];
-      const leaveVars = [{ xPercent: 0 }, { xPercent: -100 }];
-
-      this.DOM.titles?.forEach((title, index) => {
-        if (this.DOM.titles && this.DOM.slides && this.DOM.slides[index]) {
-          const charWraps = title.querySelectorAll(".char-wrap");
-          enterLeaveInterpolation({
-            target: charWraps,
-            trigger: this.DOM.slides[index],
-            enterTriggers,
-            leaveTriggers,
-            enterVars,
-            leaveVars,
-            containerAnimation: timeline,
-          });
-        }
-      });
-    };
-
-    const backgroundInterpolation = () => {
-      const leaveTriggers = ["50% center", "right center"];
-      const enterTriggers = ["left center", "center center"];
-      const enterVars = [
-        { opacity: 0, xPercent: 20 },
-        { opacity: 1, xPercent: 0 },
-      ];
-      const leaveVars = [
-        { opacity: 1, xPercent: 0 },
-        { opacity: 0, xPercent: -20 },
-      ];
-
-      this.DOM.backgrounds?.forEach((bg, index) => {
-        if (this.DOM.slides) {
-          enterLeaveInterpolation({
-            target: bg,
-            trigger: this.DOM.slides[index],
-            enterTriggers,
-            leaveTriggers,
-            enterVars,
-            leaveVars,
-            containerAnimation: timeline,
-          });
-        }
-      });
-    };
-
-    imagesInterpolation();
-    titlesInterpolation();
-    backgroundInterpolation();
-    this.scrollTimeline = timeline;
+  matchMediaCheck = () => {
+    this.configs.forEach((opts) => {
+      if (window.matchMedia(opts.mediaQuery).matches) {
+        this.options = opts;
+        this.setMeasures();
+        this.setupScroll();
+      }
+    });
   };
 
   setup = () => {
-    const setupTitles = () => {
+    const splitTitles = () => {
+      // Split chars
       this.DOM.titles?.forEach((titleDiv) => {
         const h1s = querySelectorAll(titleDiv, "h1");
         h1s?.forEach((title) => {
@@ -393,28 +367,18 @@ export class GalleryController {
       });
     };
 
-    const setupBackgrounds = () => {
-      this.DOM.backgrounds?.forEach((bg) => {
-        gsap.set(bg, { opacity: 0 });
-      });
-    };
-
-    this.setMatchMedia();
-    this.setMeasures();
+    splitTitles();
     this.addListeners();
     this.handleActiveClassNames(true);
-
-    setupTitles();
-    setupBackgrounds();
-
-    this.setupScroll();
+    this.matchMediaCheck();
+    this.initialAnimation();
   };
 
-  initialAnimation = (vars: GSAPTimelineVars) => {
+  initialAnimation = (vars?: GSAPTimelineVars) => {
     const tl = gsap.timeline({
       delay: 0.5,
       defaults: {
-        duration: 1.5,
+        duration: 0.8,
         ease: "power4.out",
       },
       paused: true,
@@ -447,9 +411,7 @@ export class GalleryController {
     gsap.to(window, {
       duration: 1,
       ease: "power4.out",
-      scrollTo: this.scrollTimeline?.scrollTrigger?.labelToScroll(
-        "label" + index,
-      ),
+      scrollTo: this.scrollTrigger.labelToScroll("label" + index),
     });
   };
 

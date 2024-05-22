@@ -9,6 +9,7 @@ import {
   TitlesContainer,
   TitleItem,
   CreditsItem,
+  DraggableProxy,
 } from "@/components/Gallery/styles";
 import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
 import GalleryController from "@/js/controllers/GalleryController.ts";
@@ -23,21 +24,9 @@ const Gallery = ({ id, data }: GalleryProps) => {
   useEffect(() => {
     let controller: GalleryController;
     const ctx = gsap.context(() => {
-      controller = new GalleryController(id, data, {
-        centered: true,
-        slidesPerView: 1,
-        breakpoints: {
-          1200: {
-            centered: true,
-            slidesPerView: 3,
-          },
-        },
-      });
-
+      controller = new GalleryController(id, data);
       controller.setup();
-      controller.initialAnimation();
     });
-
     return () => {
       ctx.revert();
       controller?.removeListeners();
@@ -55,6 +44,8 @@ const Gallery = ({ id, data }: GalleryProps) => {
           />
         ))}
       </BackgroundsContainer>
+
+      <DraggableProxy className="drag-proxy" />
 
       <GalleryWrapper className={"gallery__wrapper"}>
         {data.map((item, index) => (

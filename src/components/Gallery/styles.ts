@@ -13,7 +13,9 @@ export const GalleryContainer = styled.div`
 `;
 
 export const GalleryWrapper = styled.div`
+  min-width: 100%;
   height: 100%;
+  overflow: hidden;
   white-space: nowrap;
 `;
 
@@ -24,6 +26,15 @@ export const AbsoluteContainer = styled.div`
   width: 100%;
   height: 100%;
   position: absolute;
+`;
+
+export const DraggableProxy = styled.div`
+  top: 10%;
+  width: 100%;
+  height: 10%;
+  position: absolute;
+  pointer-events: none;
+  white-space: nowrap;
 `;
 
 export const TitlesContainer = styled(AbsoluteContainer)`

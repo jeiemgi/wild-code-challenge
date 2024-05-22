@@ -1,4 +1,5 @@
-import { SplitText } from "@/js/gsap.ts";
+import { gsap, SplitText } from "@/js/gsap.ts";
+import { GalleryOptions } from "@/js/controllers/GalleryController.ts";
 
 export const clamp = (num: number, min: number, max: number) =>
   Math.min(Math.max(num, min), max);
@@ -14,7 +15,7 @@ export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
 ) {
   let timer: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
-    const p = new Promise<ReturnType<T> | Error>((resolve, reject) => {
+    return new Promise<ReturnType<T> | Error>((resolve, reject) => {
       clearTimeout(timer);
       timer = setTimeout(() => {
         try {
@@ -28,9 +29,9 @@ export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
         }
       }, delay);
     });
-    return p;
   };
 }
+
 export const getImageMeasures = (
   {
     width,
@@ -39,27 +40,49 @@ export const getImageMeasures = (
     width: number;
     height: number;
   },
-  position = -1,
+  pos = -1,
+  config: GalleryOptions,
 ) => {
+  const { imageXPercent, alignImageRight } = config;
+  const widthClamp = gsap.utils.clamp(width * 0.5, width);
+
+  const heightClamp = gsap.utils.clamp(
+    window.innerHeight * 0.35,
+    window.innerHeight * 0.75,
+  );
+
+  const ratio = (width * 0.5) / (height * 0.75);
+
+  const defaultMeasures = {
+    width: widthClamp(width * imageXPercent),
+    height: heightClamp(height * 0.35 * ratio),
+  };
+
+  const activeMeasures = {
+    width: widthClamp(width),
+    height: heightClamp(height * 0.75),
+  };
+
+  const imageMeasures = pos === 0 ? activeMeasures : defaultMeasures;
+
   let posX = 0;
   let posY = 0;
-  const imageW = position === 0 ? width : width / 2;
-  const imageH = position === 0 ? height * 0.75 : height * 0.36;
 
-  if (position === 0) {
+  if (pos === 0) {
     posX = 0;
-    posY = (height - imageH) / 2;
-  } else if (position > 0) {
-    posX = imageW;
+    posY = (height - imageMeasures.height) / 2;
+  } else if (pos > 0) {
+    posX = alignImageRight
+      ? imageMeasures.width
+      : width / 2 - imageMeasures.width / 2;
   } else {
-    posY = height - imageH;
+    posY = height - imageMeasures.height;
   }
 
   return {
     x: Number(posX.toFixed(2)),
     y: Number(posY.toFixed(2)),
-    width: Number(imageW.toFixed(2)),
-    height: Number(imageH.toFixed(2)),
+    ...imageMeasures,
   };
 };
 

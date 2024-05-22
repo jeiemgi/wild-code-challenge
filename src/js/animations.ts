@@ -1,11 +1,6 @@
 import { gsap, ScrollTrigger } from "@/js/gsap";
-
-const getChars = (title: HTMLDivElement) => {
-  return [
-    [...title.querySelectorAll(".outline > .line")],
-    [...title.querySelectorAll(".fill > .line")],
-  ];
-};
+import { getImageMeasures } from "@/js/utils.ts";
+import GalleryController from "@/js/controllers/GalleryController.ts";
 
 export const enterLeaveInterpolation = ({
   target,
@@ -50,259 +45,100 @@ export const enterLeaveInterpolation = ({
     },
   });
 };
-
-export const scrollIn: GSAPTweenVars["scrollTrigger"] = {
-  start: "left center",
-  end: "center center",
-};
-
-export const scrollOut: GSAPTweenVars["scrollTrigger"] = {
-  scrub: true,
-  start: "center center",
-  end: "right center",
-};
-
-export const triggerStart = {
-  start: "50% center",
-  end: "149.9% center",
-};
-
-export const triggerEnd = {
-  start: "-50% center",
-  end: "49.9% center",
-};
-
-export const scrollTriggerInterpolation = ({
-  element,
-  fromVars,
-  toVars,
-  ...scrollTriggerProps
-}: {
-  element: Element;
-  fromVars: GSAPTweenVars;
-  toVars: GSAPTweenVars;
-} & ScrollTrigger["vars"]) => {
-  const interp = gsap.utils.interpolate([fromVars, toVars]);
-  ScrollTrigger.create({
-    ...scrollTriggerProps,
-    onUpdate: (self) => {
-      gsap.set(element, interp(self.progress));
-    },
-  });
-};
-
-export const scrollTextIn = (
-  title: HTMLDivElement,
-  trigger: HTMLDivElement,
-  containerAnimation: GSAPTween,
+export const imagesInterpolation = (
+  timeline: GSAPTimeline,
+  self: GalleryController,
 ) => {
-  const [lines, fills] = getChars(title);
+  if (!self.options) return;
 
-  const fromVars: GSAPTweenVars = {
-    rotate: 30,
-    opacity: 0,
-    xPercent: 100,
+  const slideMeasures = {
+    x: self.measures.slide.x || 0,
+    y: self.measures.slide.y || 0,
+    width: self.measures.slide.width || 0,
+    height: self.measures.slide.height || 0,
   };
 
-  const toVars: GSAPTweenVars = {
-    opacity: 1,
-    xPercent: 0,
-    rotate: 0,
-    duration: 0.5,
-    ease: "circ.inOut",
-    stagger: {
-      amount: 0.15,
-      ease: "circ.in",
-      from: "end",
-    },
-    scrollTrigger: {
-      trigger,
-      containerAnimation,
-      ...scrollIn,
-    },
-  };
+  const prevMeasures = getImageMeasures(slideMeasures, -1, self.options);
+  const activeMeasures = getImageMeasures(slideMeasures, 0, self.options);
+  const nextMeasures = getImageMeasures(slideMeasures, 1, self.options);
 
-  const allChars = title.querySelectorAll(".char-wrap");
-  gsap.set(title, { clearProps: "all" });
-  gsap.set(allChars, { transformOrigin: "bottom bottom" });
+  const leaveTriggers = ["50% center", "149.9% center"];
+  const enterTriggers = ["-50% center", "49.9% center"];
+  const leaveVars = [activeMeasures, prevMeasures];
+  const enterVars = [nextMeasures, activeMeasures];
 
-  lines.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.fromTo(chars, fromVars, toVars);
-  });
-
-  fills.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.fromTo(chars, fromVars, toVars);
+  self.DOM.slides?.forEach((slide, index) => {
+    if (
+      self.DOM.images &&
+      self.DOM.images[index] &&
+      self.measures.slide.width &&
+      self.measures.slide.height
+    ) {
+      const image = self.DOM.images[index];
+      enterLeaveInterpolation({
+        target: image,
+        trigger: slide,
+        enterTriggers,
+        leaveTriggers,
+        enterVars,
+        leaveVars,
+        containerAnimation: timeline,
+      });
+    }
   });
 };
 
-export const scrollTextOut = (
-  title: HTMLDivElement,
-  trigger: HTMLDivElement,
-  containerAnimation: GSAPTween,
+export const titlesInterpolation = (
+  timeline: GSAPTimeline,
+  self: GalleryController,
 ) => {
-  const [lines, fills] = getChars(title);
+  const leaveTriggers = ["50% center", "right center"];
+  const enterTriggers = ["left center", "center center"];
+  const enterVars = [{ xPercent: 100 }, { xPercent: 0 }];
+  const leaveVars = [{ xPercent: 0 }, { xPercent: -100 }];
 
-  const toVars: GSAPTweenVars = {
-    opacity: 0,
-    xPercent: 100,
-    rotate: 30,
-    duration: 0.5,
-    ease: "circ.inOut",
-    stagger: {
-      amount: 0.15,
-      ease: "circ.in",
-      from: "start",
-    },
-    scrollTrigger: {
-      trigger,
-      containerAnimation,
-      ...scrollOut,
-    },
-  };
-
-  lines.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
-  });
-
-  fills.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
+  self.DOM.titles?.forEach((title, index) => {
+    if (self.DOM.titles && self.DOM.slides && self.DOM.slides[index]) {
+      const charWraps = title.querySelectorAll(".char-wrap");
+      enterLeaveInterpolation({
+        target: charWraps,
+        trigger: self.DOM.slides[index],
+        enterTriggers,
+        leaveTriggers,
+        enterVars,
+        leaveVars,
+        containerAnimation: timeline,
+      });
+    }
   });
 };
 
-export const scrollBackgroundIn = (
-  item: Element,
-  trigger: HTMLDivElement,
-  containerAnimation: GSAPTween,
+export const backgroundInterpolation = (
+  timeline: GSAPTimeline,
+  self: GalleryController,
 ) => {
-  gsap.fromTo(
-    item,
-    {
-      opacity: 0,
-      xPercent: 50,
-    },
-    {
-      opacity: 1,
-      xPercent: 0,
-      ease: "circ.out",
-      scrollTrigger: {
-        trigger,
-        containerAnimation,
-        ...scrollIn,
-      },
-    },
-  );
-};
+  const leaveTriggers = ["50% center", "right center"];
+  const enterTriggers = ["left center", "center center"];
+  const enterVars = [
+    { opacity: 0, xPercent: 20 },
+    { opacity: 1, xPercent: 0 },
+  ];
+  const leaveVars = [
+    { opacity: 1, xPercent: 0 },
+    { opacity: 0, xPercent: -20 },
+  ];
 
-export const scrollBackgroundOut = (
-  item: Element,
-  trigger: HTMLDivElement,
-  containerAnimation: GSAPTween,
-) => {
-  gsap.to(item, {
-    opacity: 0,
-    xPercent: 50,
-    scrollTrigger: {
-      trigger,
-      containerAnimation,
-      ...scrollOut,
-    },
-  });
-};
-
-export const animateBackgroundIn = (
-  bgItem: Element,
-  tl: GSAPTimeline,
-  position: number,
-  direction: number = 1,
-) => {
-  const percent = 50;
-
-  tl.fromTo(
-    bgItem,
-    {
-      opacity: 0,
-      xPercent: percent * direction,
-    },
-    {
-      opacity: 1,
-      xPercent: 0,
-      ease: "circ.out",
-    },
-    position,
-  );
-};
-
-export const animateBackgroundOut = (
-  bgItem: Element,
-  tl: GSAPTimeline,
-  position: number,
-  direction: number,
-) => {
-  const percent = 50;
-
-  tl.to(
-    bgItem,
-    {
-      opacity: 0,
-      xPercent: percent * direction,
-    },
-    position,
-  );
-};
-
-export const animateTextIn = (title: HTMLDivElement) => {
-  const toVars: GSAPTweenVars = {
-    opacity: 1,
-    xPercent: 0,
-    rotate: 0,
-    duration: 0.5,
-    ease: "circ.inOut",
-    stagger: {
-      amount: 0.15,
-      ease: "circ.in",
-      from: "end",
-    },
-  };
-
-  const lines = title.querySelectorAll(".outline > .line");
-  const wrapsLines = title.querySelectorAll(".fill > .line");
-
-  lines.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
-  });
-
-  wrapsLines.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
-  });
-};
-
-export const animateTextOut = (title: HTMLDivElement, direction: number) => {
-  const lines = title.querySelectorAll(".outline > .line");
-  const wrapsFill = title.querySelectorAll(".fill > .line");
-  const toVars: GSAPTweenVars = {
-    opacity: 0,
-    xPercent: 100 * -direction,
-    rotate: 30 * -direction,
-    duration: 0.5,
-    ease: "circ.inOut",
-    stagger: {
-      amount: 0.15,
-      ease: "circ.in",
-      from: direction === 1 ? "end" : "start",
-    },
-  };
-  lines.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
-  });
-  wrapsFill.forEach((wrap) => {
-    const chars = wrap.querySelectorAll(".char-wrap");
-    gsap.to(chars, toVars);
+  self.DOM.backgrounds?.forEach((bg, index) => {
+    if (self.DOM.slides) {
+      enterLeaveInterpolation({
+        target: bg,
+        trigger: self.DOM.slides[index],
+        enterTriggers,
+        leaveTriggers,
+        enterVars,
+        leaveVars,
+        containerAnimation: timeline,
+      });
+    }
   });
 };

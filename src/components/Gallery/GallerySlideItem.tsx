@@ -7,8 +7,9 @@ const SlideItemStyle = styled.div`
   display: inline-block;
   position: relative;
   vertical-align: top;
-  user-select: none;
   will-change: transform;
+  pointer-events: none;
+  user-select: none;
 
   &.slide--active,
   &.slide--next,
@@ -19,13 +20,14 @@ const SlideItemStyle = styled.div`
 `;
 
 const SlideItemContent = styled.div`
+  padding: 16px;
   display: flex;
   position: relative;
   pointer-events: none;
   overflow: hidden;
   transform-origin: center;
-  padding: 16px;
   will-change: transform;
+  user-select: none;
 `;
 
 const SlideItemImg = styled.img`
@@ -38,6 +40,7 @@ const SlideItemImg = styled.img`
   border: solid 1px black;
   border-radius: 10px;
   will-change: transform;
+  user-select: none;
 `;
 
 export const SlideItem = ({
@@ -47,7 +50,7 @@ export const SlideItem = ({
   item: GalleryData[0];
 } & HTMLProps<HTMLDivElement>) => {
   return (
-    <SlideItemStyle {...props}>
+    <SlideItemStyle data-clickable={true} {...props}>
       <SlideItemContent data-hover className={"slide-item__img"}>
         <SlideItemImg src={item.image.url} alt={item.image.alt} />
       </SlideItemContent>
