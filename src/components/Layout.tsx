@@ -63,7 +63,9 @@ function Layout({ children }: PropsWithChildren) {
           </ul>
         </nav>
       </Header>
-      {children}
+      <div id="smooth-wrapper">
+        <div id="smooth-content">{children}</div>
+      </div>
       <Cursor />
     </>
   );

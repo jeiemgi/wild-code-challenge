@@ -3,16 +3,14 @@ import { GalleryData } from "@/js/data.ts";
 import { LabelSpan } from "@/components/Text.tsx";
 
 const Pagination = styled.div`
-  top: 0;
+  top: 75%;
   left: 0;
   right: 0;
-  position: absolute;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  max-width: max-content;
   margin: 0 auto;
-  bottom: 20%;
+  display: flex;
+  position: absolute;
+  max-width: max-content;
+  max-height: max-content;
 `;
 
 const PaginationInner = styled.div`

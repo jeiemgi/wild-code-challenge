@@ -27,21 +27,20 @@ type GalleryConfig = GalleryOptions & {
     [key: string]: GalleryOptions;
   };
 };
+
+const defaultMeasures = { slide: { x: 0, y: 0, height: 0, width: 0 } };
 type Measure = { x?: number; y?: number; width?: number; height?: number };
-type Measures = Record<string, Measure>;
+type Measures = Record<keyof typeof defaultMeasures, Measure>;
 
 export class GalleryController {
   booted = false;
   animating = false;
   timeoutId: number = 0;
-
   activeIndex = 0;
   cursor: CursorController = new CursorController(AUTO_PLAY_DURATION);
   data: GalleryData;
-  measures: Measures;
+  measures: Measures = defaultMeasures;
   config: GalleryConfig;
-
-  scrollTriggers: ScrollTrigger[] = [];
   scrollTimeline: GSAPTimeline | null = null;
 
   DOM: {
@@ -73,15 +72,6 @@ export class GalleryController {
 
     this.config = config;
 
-    this.measures = {
-      slide: {
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0,
-      },
-    };
-
     this.DOM = {
       container: el,
       wrapper,
@@ -90,7 +80,7 @@ export class GalleryController {
       hovers: querySelectorAll(el, "[data-hover='true']"),
       nextBtn: querySelector(el, "#button-next"),
       paginationDots: querySelectorAll(el, ".pagination__dot"),
-      paginationNumber: querySelector(el, ".pagination__dot"),
+      paginationNumber: querySelector(el, ".pagination__number"),
       prevBtn: querySelector(el, "#button-prev"),
       slides: querySelectorAll(el, ".slide-item"),
       images: querySelectorAll(el, ".slide-item__img"),
@@ -100,7 +90,7 @@ export class GalleryController {
 
   setMeasures = () => {
     if (this.DOM.container) {
-      this.measures = {};
+      this.measures = defaultMeasures;
       const slideW = window.innerWidth / this.config.slidesPerView;
       const slideH = this.DOM.container?.clientHeight;
 
@@ -111,7 +101,6 @@ export class GalleryController {
           width: slideW,
           height: slideH,
         };
-
         gsap.set(this.DOM.slides, { ...this.measures.slide });
       };
 
@@ -217,32 +206,28 @@ export class GalleryController {
       slide.removeEventListener("click", this.onClick);
     });
 
+    this.DOM.hovers?.forEach((el) => {
+      el.removeEventListener("mouseenter", this.cursor.hoverIn);
+      el.removeEventListener("mouseleave", this.cursor.hoverOut);
+    });
+
+    this.DOM.paginationDots?.forEach((dot) => {
+      dot.removeEventListener("click", this.onClick);
+    });
+
     this.cursor.cleanup();
-
-    /*this.data.forEach((_, index) => {
-      this.DOM.hovers?.forEach((el) => {
-        el.removeEventListener("mouseenter", this.cursor.hoverIn);
-        el.removeEventListener("mouseleave", this.cursor.hoverOut);
-      });
-
-      if (
-        this.DOM.paginationDots &&
-        this.DOM.paginationDots[index] &&
-        this.DOM.slides &&
-        this.DOM.slides[index]
-      ) {
-        this.DOM.paginationDots[index].removeEventListener(
-          "click",
-          this.onClick,
-        );
-        this.DOM.slides[index].removeEventListener("click", this.onClick);
-      }
-    });*/
   };
 
-  handleActiveClassNames = () => {
-    if (this.DOM.paginationNumber)
+  handleActiveClassNames = (initial = false, prevIndex = 0) => {
+    if (this.DOM.credits && !initial) {
+      gsap.killTweensOf(this.DOM.credits);
+      gsap.to(this.DOM.credits[prevIndex], { opacity: 0 });
+      gsap.to(this.DOM.credits[this.activeIndex], { opacity: 1 });
+    }
+
+    if (this.DOM.paginationNumber) {
       this.DOM.paginationNumber.innerText = `${this.activeIndex + 1}`;
+    }
 
     this.DOM.paginationDots?.forEach((dot, index) => {
       if (this.activeIndex === index) {
@@ -268,6 +253,7 @@ export class GalleryController {
   setupScroll = () => {
     const duration = 1;
     const count = this.data.length - 1;
+    let prevIndex = this.activeIndex;
 
     const timeline = gsap.timeline({
       scrollTrigger: {
@@ -275,18 +261,21 @@ export class GalleryController {
         onUpdate: (s) => {
           if (s.progress <= 1) {
             this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
+            if (this.activeIndex !== prevIndex) {
+              this.handleActiveClassNames(false, prevIndex);
+              prevIndex = this.activeIndex;
+            }
           }
         },
         snap: {
-          inertia: true,
           delay: 0.01,
-          duration: 0.5,
-          ease: "power2.out",
+          duration: 1,
+          ease: "power4.out",
           snapTo: "labelsDirectional",
         },
         pin: true,
         trigger: this.DOM.container,
-        end: () => `+=${this.data.length * 100}%`,
+        end: () => `+=${this.data.length * 150}%`,
       },
     });
 
@@ -392,14 +381,14 @@ export class GalleryController {
 
   setup = () => {
     const setupTitles = () => {
-      this.DOM.titles?.forEach((titleDiv, index) => {
+      this.DOM.titles?.forEach((titleDiv) => {
         const h1s = querySelectorAll(titleDiv, "h1");
         h1s?.forEach((title) => {
           splitTitle(title);
         });
         const wraps = titleDiv.querySelectorAll(".char-wrap");
         gsap.set(wraps, {
-          xPercent: index === 0 ? 0 : 100,
+          xPercent: 100,
         });
       });
     };
@@ -413,7 +402,7 @@ export class GalleryController {
     this.setMatchMedia();
     this.setMeasures();
     this.addListeners();
-    this.handleActiveClassNames();
+    this.handleActiveClassNames(true);
 
     setupTitles();
     setupBackgrounds();
@@ -421,41 +410,35 @@ export class GalleryController {
     this.setupScroll();
   };
 
-  initialAnimation = () => {
-    const { activeIndex } = this;
-
+  initialAnimation = (vars: GSAPTimelineVars) => {
     const tl = gsap.timeline({
-      paused: true,
-      onComplete: () => {
-        this.booted = true;
+      delay: 0.5,
+      defaults: {
+        duration: 1.5,
+        ease: "power4.out",
       },
+      paused: true,
+      ...vars,
     });
 
-    const animateBackground = () => {
-      if (this.DOM.backgrounds) {
-        tl.to(
-          this.DOM.backgrounds[activeIndex],
-          {
-            opacity: 1,
-            duration: 1,
-          },
-          0,
-        );
-      }
-    };
+    tl.to(".ui-initial", { opacity: 1 }, 0);
+    tl.from(this.DOM.slides, { xPercent: 20, opacity: 0, stagger: 0.2 }, 0);
 
-    // const animateCopy = () => {
-    //     gsap.to(".ui-initial", {
-    //       opacity: 1,
-    //       duration: 1,
-    //       delay: 1.2,
-    //     });
-    //     const credit = querySelectorAll(this.container, "");
-    //     gsap.to(credit, { opacity: 1, duration: 1, delay: 1.2 });
-    //   }
-    // };
+    if (this.DOM.titles) {
+      const titleDiv = this.DOM.titles[this.activeIndex];
+      const wraps = titleDiv.querySelectorAll(".char-wrap");
+      tl.to(wraps, { xPercent: 0 }, 0);
+    }
 
-    animateBackground();
+    if (this.DOM.backgrounds) {
+      const activeBg = this.DOM.backgrounds[this.activeIndex];
+      tl.from(activeBg, { xPercent: -50 }, 0);
+      tl.to(activeBg, { opacity: 1 }, 0);
+    }
+
+    if (this.DOM.credits) {
+      tl.to(this.DOM.credits[this.activeIndex], { opacity: 1 }, 0);
+    }
 
     tl.play();
   };
@@ -478,34 +461,34 @@ export class GalleryController {
     }
   };
 
-  // get hasNext() {
-  //   return this.activeIndex < this.data.length - 1;
-  // }
+  start = () => {
+    clearTimeout(this.timeoutId);
+    this.timeoutId = setTimeout(() => {
+      this.nextSlide();
+    }, AUTO_PLAY_DURATION * 1000);
+  };
 
-  // get canAnimate() {
-  //   return this.booted && !this.animating && this.hasNext;
-  // }
+  stop = () => {
+    clearTimeout(this.timeoutId);
+    this.cursor.timeline.pause(0);
+  };
 
-  // start = () => {
-  //   clearTimeout(this.timeoutId);
-  //   this.timeoutId = setTimeout(() => {
-  //     this.nextSlide();
-  //   }, AUTO_PLAY_DURATION * 1000);
-  // };
+  nextSlide = () => {
+    if (this.canAnimate) {
+      this.goToSlide(this.activeIndex + 1);
+      this.start();
+    } else {
+      this.stop();
+    }
+  };
 
-  // stop = () => {
-  //   clearTimeout(this.timeoutId);
-  //   this.cursor.timeline.pause(0);
-  // };
+  get hasNext() {
+    return this.activeIndex < this.data.length - 1;
+  }
 
-  // nextSlide = () => {
-  //   if (this.canAnimate) {
-  //     this.goToSlide(this.activeIndex + 1);
-  //     this.start();
-  //   } else {
-  //     this.stop();
-  //   }
-  // };
+  get canAnimate() {
+    return this.booted && !this.animating && this.hasNext;
+  }
 }
 
 export default GalleryController;

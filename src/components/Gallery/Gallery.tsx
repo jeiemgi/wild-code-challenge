@@ -1,5 +1,5 @@
 import { gsap } from "@/js/gsap";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import {
   GalleryWrapper,
   GalleryContainer,
@@ -8,6 +8,7 @@ import {
   SlideItem,
   TitlesContainer,
   TitleItem,
+  CreditsItem,
 } from "@/components/Gallery/styles";
 import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
 import GalleryController from "@/js/controllers/GalleryController.ts";
@@ -45,8 +46,6 @@ const Gallery = ({ id, data }: GalleryProps) => {
 
   return (
     <GalleryContainer id={id} className={"gallery__container"}>
-      {/*<Rule $color={"yellow"} className={"rule"} $center />*/}
-
       <BackgroundsContainer className={"gallery__backgrounds"}>
         {data.map((item, index) => (
           <BackgroundItem
@@ -70,12 +69,14 @@ const Gallery = ({ id, data }: GalleryProps) => {
 
       <TitlesContainer className={"gallery__titles"}>
         {data.map((item, index) => (
-          <TitleItem
-            item={item}
-            index={index}
-            key={`Titles-${index}`}
-            className={"slide-title-item"}
-          />
+          <Fragment key={`Titles-${index}`}>
+            <TitleItem
+              item={item}
+              index={index}
+              className={"slide-title-item"}
+            />
+            <CreditsItem item={item} />
+          </Fragment>
         ))}
       </TitlesContainer>
 
