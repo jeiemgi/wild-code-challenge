@@ -1,5 +1,5 @@
 import { gsap } from "@/js/gsap";
-import { Fragment, useEffect } from "react";
+import { useEffect } from "react";
 import {
   GalleryWrapper,
   GalleryContainer,
@@ -35,6 +35,7 @@ const Gallery = ({ id, data }: GalleryProps) => {
 
   return (
     <GalleryContainer id={id} className={"gallery__container"}>
+      <DraggableProxy className="drag-proxy" />
       <BackgroundsContainer className={"gallery__backgrounds"}>
         {data.map((item, index) => (
           <BackgroundItem
@@ -44,8 +45,6 @@ const Gallery = ({ id, data }: GalleryProps) => {
           />
         ))}
       </BackgroundsContainer>
-
-      <DraggableProxy className="drag-proxy" />
 
       <GalleryWrapper className={"gallery__wrapper"}>
         {data.map((item, index) => (
@@ -60,14 +59,15 @@ const Gallery = ({ id, data }: GalleryProps) => {
 
       <TitlesContainer className={"gallery__titles"}>
         {data.map((item, index) => (
-          <Fragment key={`Titles-${index}`}>
-            <TitleItem
-              item={item}
-              index={index}
-              className={"slide-title-item"}
-            />
-            <CreditsItem item={item} />
-          </Fragment>
+          <TitleItem
+            item={item}
+            index={index}
+            className={"slide-title-item"}
+            key={`TitleItem-${index}`}
+          />
+        ))}
+        {data.map((item, index) => (
+          <CreditsItem item={item} key={`CreditsItem-${index}`} />
         ))}
       </TitlesContainer>
 

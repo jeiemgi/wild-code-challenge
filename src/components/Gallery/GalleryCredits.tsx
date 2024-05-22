@@ -1,12 +1,33 @@
 import styled from "styled-components";
-import { Col, Grid } from "@/components/Grid.tsx";
 import { LabelSpan } from "@/components/Text.tsx";
 import type { GalleryData } from "@/js/data.ts";
 
-const Container = styled(Grid)`
-  position: absolute;
-  bottom: 100px;
+export const CreditItem = styled.div`
+  grid-column: 1 / span 2;
+  grid-column-start: 2;
+
+  @media screen and (min-width: 900px) {
+    grid-column: 1;
+    grid-column-start: 11;
+  }
+`;
+
+const Container = styled.div`
+  left: 0;
+  bottom: 32px;
   width: 100%;
+  padding: 8px;
+  position: absolute;
+  display: grid;
+  grid-column-gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+
+  @media screen and (min-width: 900px) {
+    padding: 16px;
+    bottom: 100px;
+    grid-column-gap: 1rem;
+    grid-template-columns: repeat(12, 1fr);
+  }
 
   .credit {
     opacity: 0;
@@ -29,21 +50,38 @@ const Button = styled.button`
   pointer-events: all;
 `;
 
+const Name = styled(LabelSpan)`
+  display: block;
+  text-align: center;
+  padding-right: 2em;
+
+  @media screen and (min-width: 900px) {
+    text-align: left;
+  }
+`;
+
+const Date = styled(LabelSpan)`
+  display: block;
+  text-align: center;
+  margin-bottom: 2em;
+
+  @media screen and (min-width: 900px) {
+    display: block;
+    text-align: right;
+  }
+`;
+
 export const CreditsItem = ({ item }: { item: GalleryData[0] }) => {
   return (
     <Container className={"ui-initial"}>
-      <Col $span={1} $start={11} className="credit">
-        <LabelSpan $color={"white"} className={"pr-8"}>
-          {item.subtitle}
-        </LabelSpan>
-        <br />
-        <div className={"mb-4 text-right"}>
-          <LabelSpan $color={"white"}>{item.date}</LabelSpan>
-        </div>
+      <CreditItem className="credit">
+        <Name $color={"white"}>{item.subtitle}</Name>
+        <Date $color={"white"}>{item.date}</Date>
+
         <Button data-hover>
           <LabelSpan>HAVE A LOOK</LabelSpan>
         </Button>
-      </Col>
+      </CreditItem>
     </Container>
   );
 };
