@@ -11,6 +11,7 @@ const BackgroundStyle = styled.div`
   background-size: cover;
   background-position: center;
   transform: scale(1.5);
+  pointer-events: none;
 `;
 
 export function BackgroundItem({

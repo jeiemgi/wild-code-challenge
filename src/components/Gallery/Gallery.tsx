@@ -9,6 +9,7 @@ import {
   TitlesContainer,
   TitleItem,
 } from "@/components/Gallery/styles";
+import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
 import GalleryController from "@/js/controllers/GalleryController.ts";
 import type { GalleryData } from "@/js/data.ts";
 
@@ -60,6 +61,7 @@ const Gallery = ({ id, data }: GalleryProps) => {
         {data.map((item, index) => (
           <SlideItem
             item={item}
+            data-index={index}
             className={"slide-item"}
             key={`SlideItem-${index}`}
           />
@@ -77,7 +79,7 @@ const Gallery = ({ id, data }: GalleryProps) => {
         ))}
       </TitlesContainer>
 
-      {/*<GalleryPagination data={data} />*/}
+      <GalleryPagination data={data} />
     </GalleryContainer>
   );
 };

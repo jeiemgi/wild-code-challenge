@@ -8,7 +8,6 @@ const SlideItemStyle = styled.div`
   position: relative;
   vertical-align: top;
   user-select: none;
-  pointer-events: none;
   will-change: transform;
 
   &.slide--active,

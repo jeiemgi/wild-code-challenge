@@ -31,8 +31,8 @@ type Measure = { x?: number; y?: number; width?: number; height?: number };
 type Measures = Record<string, Measure>;
 
 export class GalleryController {
-  animating = false;
   booted = false;
+  animating = false;
   timeoutId: number = 0;
 
   activeIndex = 0;
@@ -195,7 +195,7 @@ export class GalleryController {
     window.addEventListener("resize", this.onResizeFinished);
 
     // Add click listener to slides
-    /*this.DOM.hovers?.forEach((el) => {
+    this.DOM.hovers?.forEach((el) => {
       el.addEventListener("mouseenter", this.cursor.hoverIn);
       el.addEventListener("mouseleave", this.cursor.hoverOut);
     });
@@ -206,12 +206,16 @@ export class GalleryController {
 
     this.DOM.paginationDots?.forEach((dot) => {
       dot.addEventListener("click", this.onClick);
-    });*/
+    });
   };
 
   removeListeners = () => {
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("resize", this.onResizeFinished);
+
+    this.DOM.slides?.forEach((slide) => {
+      slide.removeEventListener("click", this.onClick);
+    });
 
     this.cursor.cleanup();
 
@@ -261,6 +265,131 @@ export class GalleryController {
     });
   };
 
+  setupScroll = () => {
+    const duration = 1;
+    const count = this.data.length - 1;
+
+    const timeline = gsap.timeline({
+      scrollTrigger: {
+        scrub: 0.1,
+        onUpdate: (s) => {
+          if (s.progress <= 1) {
+            this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
+          }
+        },
+        snap: {
+          inertia: true,
+          delay: 0.01,
+          duration: 0.5,
+          ease: "power2.out",
+          snapTo: "labelsDirectional",
+        },
+        pin: true,
+        trigger: this.DOM.container,
+        end: () => `+=${this.data.length * 100}%`,
+      },
+    });
+
+    timeline.to(this.DOM.slides, {
+      duration,
+      ease: "none",
+      xPercent: -100 * count,
+    });
+
+    const imagesInterpolation = () => {
+      const slideMeasures = {
+        x: this.measures.slide.x || 0,
+        y: this.measures.slide.y || 0,
+        width: this.measures.slide.width || 0,
+        height: this.measures.slide.height || 0,
+      };
+
+      const prevMeasures = getImageMeasures(slideMeasures, -1);
+      const activeMeasures = getImageMeasures(slideMeasures, 0);
+      const nextMeasures = getImageMeasures(slideMeasures, 1);
+
+      const leaveTriggers = ["50% center", "149.9% center"];
+      const enterTriggers = ["-50% center", "49.9% center"];
+      const leaveVars = [activeMeasures, prevMeasures];
+      const enterVars = [nextMeasures, activeMeasures];
+
+      this.DOM.slides?.forEach((slide, index) => {
+        timeline.add("label" + index, index * (duration / count));
+        if (
+          this.DOM.images &&
+          this.DOM.images[index] &&
+          this.measures.slide.width &&
+          this.measures.slide.height
+        ) {
+          const image = this.DOM.images[index];
+          enterLeaveInterpolation({
+            target: image,
+            trigger: slide,
+            enterTriggers,
+            leaveTriggers,
+            enterVars,
+            leaveVars,
+            containerAnimation: timeline,
+          });
+        }
+      });
+    };
+
+    const titlesInterpolation = () => {
+      const leaveTriggers = ["50% center", "right center"];
+      const enterTriggers = ["left center", "center center"];
+      const enterVars = [{ xPercent: 100 }, { xPercent: 0 }];
+      const leaveVars = [{ xPercent: 0 }, { xPercent: -100 }];
+
+      this.DOM.titles?.forEach((title, index) => {
+        if (this.DOM.titles && this.DOM.slides && this.DOM.slides[index]) {
+          const charWraps = title.querySelectorAll(".char-wrap");
+          enterLeaveInterpolation({
+            target: charWraps,
+            trigger: this.DOM.slides[index],
+            enterTriggers,
+            leaveTriggers,
+            enterVars,
+            leaveVars,
+            containerAnimation: timeline,
+          });
+        }
+      });
+    };
+
+    const backgroundInterpolation = () => {
+      const leaveTriggers = ["50% center", "right center"];
+      const enterTriggers = ["left center", "center center"];
+      const enterVars = [
+        { opacity: 0, xPercent: 20 },
+        { opacity: 1, xPercent: 0 },
+      ];
+      const leaveVars = [
+        { opacity: 1, xPercent: 0 },
+        { opacity: 0, xPercent: -20 },
+      ];
+
+      this.DOM.backgrounds?.forEach((bg, index) => {
+        if (this.DOM.slides) {
+          enterLeaveInterpolation({
+            target: bg,
+            trigger: this.DOM.slides[index],
+            enterTriggers,
+            leaveTriggers,
+            enterVars,
+            leaveVars,
+            containerAnimation: timeline,
+          });
+        }
+      });
+    };
+
+    imagesInterpolation();
+    titlesInterpolation();
+    backgroundInterpolation();
+    this.scrollTimeline = timeline;
+  };
+
   setup = () => {
     const setupTitles = () => {
       this.DOM.titles?.forEach((titleDiv, index) => {
@@ -281,123 +410,6 @@ export class GalleryController {
       });
     };
 
-    const setupScroll = () => {
-      const duration = 1;
-      const count = this.data.length - 1;
-
-      const scrollTimeline = gsap.timeline({
-        scrollTrigger: {
-          scrub: 1,
-          snap: {
-            duration: 0.5,
-            ease: "power4.out",
-            snapTo: "labelsDirectional",
-          },
-          pin: true,
-          trigger: this.DOM.container,
-          end: () => `+=${this.data.length * 150}%`,
-        },
-      });
-
-      scrollTimeline.to(this.DOM.slides, {
-        xPercent: -100 * count,
-        duration,
-        ease: "none",
-      });
-
-      const imagesInterpolation = () => {
-        const slideMeasures = {
-          x: this.measures.slide.x || 0,
-          y: this.measures.slide.y || 0,
-          width: this.measures.slide.width || 0,
-          height: this.measures.slide.height || 0,
-        };
-
-        const prevMeasures = getImageMeasures(slideMeasures, -1);
-        const activeMeasures = getImageMeasures(slideMeasures, 0);
-        const nextMeasures = getImageMeasures(slideMeasures, 1);
-
-        const leaveTriggers = ["50% center", "149.9% center"];
-        const enterTriggers = ["-50% center", "49.9% center"];
-        const leaveVars = [activeMeasures, prevMeasures];
-        const enterVars = [nextMeasures, activeMeasures];
-
-        this.DOM.slides?.forEach((slide, index) => {
-          scrollTimeline.add("label" + index, index * (duration / count));
-          if (
-            this.DOM.images &&
-            this.DOM.images[index] &&
-            this.measures.slide.width &&
-            this.measures.slide.height
-          ) {
-            const image = this.DOM.images[index];
-            enterLeaveInterpolation({
-              target: image,
-              trigger: slide,
-              enterTriggers,
-              leaveTriggers,
-              enterVars,
-              leaveVars,
-              containerAnimation: scrollTimeline,
-            });
-          }
-        });
-      };
-
-      const titlesInterpolation = () => {
-        const leaveTriggers = ["50% center", "right center"];
-        const enterTriggers = ["left center", "center center"];
-        const enterVars = [{ xPercent: 100 }, { xPercent: 0 }];
-        const leaveVars = [{ xPercent: 0 }, { xPercent: -100 }];
-
-        this.DOM.titles?.forEach((title, index) => {
-          if (this.DOM.titles && this.DOM.slides && this.DOM.slides[index]) {
-            const charWraps = title.querySelectorAll(".char-wrap");
-            enterLeaveInterpolation({
-              target: charWraps,
-              trigger: this.DOM.slides[index],
-              enterTriggers,
-              leaveTriggers,
-              enterVars,
-              leaveVars,
-              containerAnimation: scrollTimeline,
-            });
-          }
-        });
-      };
-
-      const backgroundInterpolation = () => {
-        const leaveTriggers = ["50% center", "right center"];
-        const enterTriggers = ["left center", "center center"];
-        const enterVars = [
-          { opacity: 0, xPercent: 20 },
-          { opacity: 1, xPercent: 0 },
-        ];
-        const leaveVars = [
-          { opacity: 1, xPercent: 0 },
-          { opacity: 0, xPercent: -20 },
-        ];
-
-        this.DOM.backgrounds?.forEach((bg, index) => {
-          if (this.DOM.slides) {
-            enterLeaveInterpolation({
-              target: bg,
-              trigger: this.DOM.slides[index],
-              enterTriggers,
-              leaveTriggers,
-              enterVars,
-              leaveVars,
-              containerAnimation: scrollTimeline,
-            });
-          }
-        });
-      };
-
-      imagesInterpolation();
-      titlesInterpolation();
-      backgroundInterpolation();
-    };
-
     this.setMatchMedia();
     this.setMeasures();
     this.addListeners();
@@ -405,7 +417,8 @@ export class GalleryController {
 
     setupTitles();
     setupBackgrounds();
-    setupScroll();
+
+    this.setupScroll();
   };
 
   initialAnimation = () => {
@@ -447,14 +460,23 @@ export class GalleryController {
     tl.play();
   };
 
-  // onClick = (e: MouseEvent) => {
-  //   const target = e.target ? (e.target as HTMLDivElement) : e.target;
-  //   const index = Number(target?.dataset.index);
-  //   if (index === 0 || (index && index !== this.activeIndex)) {
-  //     // this.goToSlide(index);
-  //     this.start();
-  //   }
-  // };
+  goToSlide = (index: number) => {
+    gsap.to(window, {
+      duration: 1,
+      ease: "power4.out",
+      scrollTo: this.scrollTimeline?.scrollTrigger?.labelToScroll(
+        "label" + index,
+      ),
+    });
+  };
+
+  onClick = (e: MouseEvent) => {
+    const target = e.target ? (e.target as HTMLDivElement) : e.target;
+    const index = Number(target?.dataset.index);
+    if (index === 0 || (index && index !== this.activeIndex)) {
+      this.goToSlide(index);
+    }
+  };
 
   // get hasNext() {
   //   return this.activeIndex < this.data.length - 1;

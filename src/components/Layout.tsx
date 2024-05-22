@@ -10,6 +10,7 @@ const Header = styled.header`
   position: fixed;
   width: 100%;
   padding: 16px;
+  z-index: 999;
 
   #logo {
     font-family: "Tungsten", sans-serif;

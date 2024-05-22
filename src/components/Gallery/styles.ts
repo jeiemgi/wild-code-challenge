@@ -36,4 +36,5 @@ export const TitlesContainer = styled(AbsoluteContainer)`
 export const BackgroundsContainer = styled(AbsoluteContainer)`
   display: flex;
   align-items: center;
+  pointer-events: none;
 `;
