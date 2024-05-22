@@ -1,4 +1,4 @@
-import { gsap, ScrollTrigger, Draggable, Observer } from "@/js/gsap.ts";
+import { gsap, ScrollTrigger, Draggable } from "@/js/gsap.ts";
 import {
   debounce,
   getImageMeasures,
@@ -205,13 +205,7 @@ export class GalleryController {
     this.cursor.cleanup();
   };
 
-  handleActiveClassNames = (initial = false, prevIndex = 0) => {
-    if (this.DOM.credits && !initial) {
-      gsap.killTweensOf(this.DOM.credits);
-      gsap.to(this.DOM.credits[prevIndex], { opacity: 0 });
-      gsap.to(this.DOM.credits[this.activeIndex], { opacity: 1 });
-    }
-
+  handleActiveClassNames = () => {
     if (this.DOM.paginationNumber) {
       this.DOM.paginationNumber.innerText = `${this.activeIndex + 1}`;
     }
@@ -224,16 +218,27 @@ export class GalleryController {
       }
     });
 
-    this.DOM.slides?.forEach((slide, index) => {
-      const { activeIndex } = this;
-      const className = "slide";
+    const { activeIndex } = this;
+
+    const setIndexClassName = (
+      el: HTMLDivElement,
+      className: string,
+      index: number,
+    ) => {
       const prevClass = `${className}--prev`;
       const activeClass = `${className}--active`;
       const nextClass = `${className}--next`;
-      slide.classList.remove(prevClass, nextClass, activeClass);
-      if (index === activeIndex - 1) slide.classList.add(prevClass);
-      else if (index === activeIndex) slide.classList.add(activeClass);
-      else if (index === activeIndex + 1) slide.classList.add(nextClass);
+      el.classList.remove(prevClass, nextClass, activeClass);
+      if (index === activeIndex - 1) el.classList.add(prevClass);
+      else if (index === activeIndex) el.classList.add(activeClass);
+      else if (index === activeIndex + 1) el.classList.add(nextClass);
+    };
+
+    this.DOM.credits?.forEach((credit, index) => {
+      setIndexClassName(credit, "credit", index);
+    });
+    this.DOM.slides?.forEach((slide, index) => {
+      setIndexClassName(slide, "slide", index);
     });
   };
 
@@ -244,7 +249,6 @@ export class GalleryController {
 
     const duration = 1;
     const count = this.data.length - 1;
-    const prevIndex = this.activeIndex;
 
     const createScrollerTimeline = () => {
       const tl = gsap.timeline({});
@@ -267,28 +271,24 @@ export class GalleryController {
       return tl;
     };
 
+    let prevIndex = this.activeIndex;
     const tl = createScrollerTimeline();
-
     const wrapperRect = this.DOM.wrapper.getBoundingClientRect();
     const maxScroll = wrapperRect.width - window.innerWidth;
 
     const trigger = ScrollTrigger.create({
-      markers: true,
-      scrub: 0,
+      scrub: 1,
       pin: true,
       animation: tl,
       trigger: this.DOM.container,
       start: "top top",
       end: () => "+=" + wrapperRect.width,
-
       onUpdate: (s) => {
-        /*if (s.progress <= 1) {
-          this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
-          if (this.activeIndex !== prevIndex) {
-            this.handleActiveClassNames(false, prevIndex);
-            prevIndex = this.activeIndex;
-          }
-        }*/
+        this.activeIndex = Math.ceil(s.progress * this.data.length) - 1;
+        if (this.activeIndex !== prevIndex) {
+          this.handleActiveClassNames();
+          prevIndex = this.activeIndex;
+        }
       },
       snap: {
         delay: 0.01,
@@ -336,7 +336,7 @@ export class GalleryController {
       if (!id || e.key !== "Tab") return;
       const section = document.querySelector(id);
       const y = section.getBoundingClientRect().top + window.scrollY;
-      st.scroll(y);
+      trigger.scroll(y);
     });*/
 
     this.scrollTrigger = trigger;
@@ -369,7 +369,7 @@ export class GalleryController {
 
     splitTitles();
     this.addListeners();
-    this.handleActiveClassNames(true);
+    this.handleActiveClassNames();
     this.matchMediaCheck();
     this.initialAnimation();
   };
@@ -398,10 +398,6 @@ export class GalleryController {
       const activeBg = this.DOM.backgrounds[this.activeIndex];
       tl.from(activeBg, { xPercent: -50 }, 0);
       tl.to(activeBg, { opacity: 1 }, 0);
-    }
-
-    if (this.DOM.credits) {
-      tl.to(this.DOM.credits[this.activeIndex], { opacity: 1 }, 0);
     }
 
     tl.play();

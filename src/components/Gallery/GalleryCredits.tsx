@@ -10,6 +10,11 @@ const Container = styled(Grid)`
 
   .credit {
     opacity: 0;
+    transition: opacity 0.2s ease-out;
+
+    &.credit--active {
+      opacity: 1;
+    }
   }
 `;
 
@@ -26,7 +31,7 @@ const Button = styled.button`
 
 export const CreditsItem = ({ item }: { item: GalleryData[0] }) => {
   return (
-    <Container>
+    <Container className={"ui-initial"}>
       <Col $span={1} $start={11} className="credit">
         <LabelSpan $color={"white"} className={"pr-8"}>
           {item.subtitle}
