@@ -12,10 +12,14 @@
   font-display: swap;
 }
 
+html, body {
+  scroll-behavior: auto !important;
+}
 
 body {
-  overscroll-behavior: none;
   cursor: none;
+  background-color: #000;
+  overscroll-behavior: none;
 }
 
 .ui-initial {

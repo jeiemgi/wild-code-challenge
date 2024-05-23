@@ -1,50 +1,79 @@
 import { gsap } from "@/js/gsap";
 import { useEffect } from "react";
-import styled from "styled-components";
-import GalleryUI from "@/components/Gallery/GalleryUI.tsx";
-import GallerySlides from "@/components/Gallery/GallerySlides.tsx";
-import GalleryBackground from "@/components/Gallery/GalleryBackground.tsx";
-import GalleryController from "@/js/controllers/GalleryController.ts";
-import GalleryTitles from "@/components/Gallery/GalleryTitles.tsx";
+import {
+  GalleryWrapper,
+  GalleryContainer,
+  BackgroundsContainer,
+  BackgroundItem,
+  SlideItem,
+  TitlesContainer,
+  TitleItem,
+  CreditsItem,
+  DraggableProxy,
+} from "@/components/Gallery/styles";
 import GalleryPagination from "@/components/Gallery/GalleryPagination.tsx";
-import type { DataType } from "@/js/data.ts";
+import GalleryController from "@/js/controllers/GalleryController.ts";
+import type { GalleryData } from "@/js/data.ts";
 
-const Wrapper = styled.main`
-  width: 100vw;
-  height: 100vh;
-  background: black;
-  overflow: hidden;
-`;
-
-interface Props {
-  data: DataType;
+interface GalleryProps {
+  id: string;
+  data: GalleryData;
 }
 
-function Gallery({ data }: Props) {
+const Gallery = ({ id, data }: GalleryProps) => {
   useEffect(() => {
     let controller: GalleryController;
-
     const ctx = gsap.context(() => {
-      controller = new GalleryController("#gallery-home", data);
+      controller = new GalleryController(id, data);
+      controller.setup();
     });
-
     return () => {
       ctx.revert();
       controller?.removeListeners();
     };
-  }, [data]);
+  }, [id, data]);
 
   return (
-    <>
-      <Wrapper id={"gallery-home"}>
-        <GalleryBackground data={data} />
-        <GallerySlides data={data} />
-        <GalleryTitles data={data} />
-        <GalleryPagination data={data} />
-        <GalleryUI />
-      </Wrapper>
-    </>
+    <GalleryContainer id={id} className={"gallery__container"}>
+      <DraggableProxy className="drag-proxy" />
+      <BackgroundsContainer className={"gallery__backgrounds"}>
+        {data.map((item, index) => (
+          <BackgroundItem
+            item={item}
+            key={`BackgroundItem-${index}`}
+            className={"slide-background-item"}
+          />
+        ))}
+      </BackgroundsContainer>
+
+      <GalleryWrapper className={"gallery__wrapper"}>
+        {data.map((item, index) => (
+          <SlideItem
+            item={item}
+            data-index={index}
+            className={"slide-item"}
+            key={`SlideItem-${index}`}
+          />
+        ))}
+      </GalleryWrapper>
+
+      <TitlesContainer className={"gallery__titles"}>
+        {data.map((item, index) => (
+          <TitleItem
+            item={item}
+            index={index}
+            className={"slide-title-item"}
+            key={`TitleItem-${index}`}
+          />
+        ))}
+        {data.map((item, index) => (
+          <CreditsItem item={item} key={`CreditsItem-${index}`} />
+        ))}
+      </TitlesContainer>
+
+      <GalleryPagination data={data} />
+    </GalleryContainer>
   );
-}
+};
 
 export default Gallery;
